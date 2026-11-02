@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Administrador de Conversaciones para Gemini y ChatGPT"
+  },
+  "extDesc": {
+    "message": "Selecciona, organiza en carpetas, filtra, exporta y elimina múltiples chats de Gemini y ChatGPT con checkboxes."
+  }
+}
