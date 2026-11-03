@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/chatfold-full.png" alt="ChatFold" width="380" />
+</p>
+
 # ChatFold: Gestor de Carpetas para Gemini & ChatGPT
 
 **ChatFold** es una extensión de Chrome (Manifest V3) que transforma tu experiencia en **Gemini** y **ChatGPT**: añade carpetas inteligentes con clasificación automática por palabras clave, barra superior contraíble, búsqueda instantánea, protección de chats contra borrado accidental, selección múltiple, borrado masivo seguro, exportación a Markdown y respaldo/importación en JSON.
