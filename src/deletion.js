@@ -1,6 +1,6 @@
 import { showConfirmModal, updateStatusToast } from './dialogs.js';
 import { refreshUI } from './main.js';
-import { P, PLATFORM_KEY, SELECTORS } from './platform.js';
+import { PLATFORM_KEY, SELECTORS } from './platform.js';
 import { findRowById, getSidebarElement, isSingleRowContainer } from './sidebar.js';
 import { selectedMap, state, t } from './state.js';
 import { saveFolderData } from './storage.js';
@@ -325,7 +325,7 @@ export async function deleteSelectedChats() {
           errorCount++;
         }
       } catch (err) {
-        console.warn(`[${P.name} Manager] Error deleting conversation:`, err);
+        console.warn('[ChatFold] Error deleting conversation:', err);
         errorCount++;
         document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await sleep(400);

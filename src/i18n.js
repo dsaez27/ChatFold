@@ -3,7 +3,7 @@ import { P } from './platform.js';
 // Diccionario Bilingüe Español / Inglés adaptado dinámicamente a la plataforma activa
 export const I18N = {
   es: {
-    panelTitle: `Gestor de Gemini & ChatGPT`,
+    panelTitle: 'ChatFold',
     toggleMinTitle: 'Clic para minimizar/expandir',
     toolbarCollapseTitle: 'Contraer barra superior',
     toolbarExpandTitle: 'Expandir barra superior',
@@ -81,7 +81,7 @@ export const I18N = {
     ]
   },
   en: {
-    panelTitle: `${P.name} Manager`,
+    panelTitle: 'ChatFold',
     toggleMinTitle: 'Click to minimize/expand',
     toolbarCollapseTitle: 'Collapse top bar',
     toolbarExpandTitle: 'Expand top bar',

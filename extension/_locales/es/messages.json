@@ -1,8 +1,8 @@
 {
   "extName": {
-    "message": "Administrador de Conversaciones para Gemini y ChatGPT"
+    "message": "ChatFold: Gestor de Carpetas para Gemini y ChatGPT"
   },
   "extDesc": {
-    "message": "Selecciona, organiza en carpetas, filtra, exporta y elimina múltiples chats de Gemini y ChatGPT con checkboxes."
+    "message": "Organiza en carpetas, clasifica automáticamente, protege y administra tus conversaciones en Gemini y ChatGPT con ChatFold."
   }
 }

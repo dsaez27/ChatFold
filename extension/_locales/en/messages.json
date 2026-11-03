@@ -1,8 +1,8 @@
 {
   "extName": {
-    "message": "Conversation Manager for Gemini & ChatGPT"
+    "message": "ChatFold - Folder Manager for Gemini & ChatGPT"
   },
   "extDesc": {
-    "message": "Select, organize into folders, filter, export, and bulk delete multiple Gemini & ChatGPT chats easily with checkboxes."
+    "message": "Organize into folders, auto-classify, protect and manage your Gemini & ChatGPT chats easily with ChatFold."
   }
 }

@@ -64,7 +64,7 @@
   // src/i18n.js
   var I18N = {
     es: {
-      panelTitle: `Gestor de Gemini & ChatGPT`,
+      panelTitle: "ChatFold",
       toggleMinTitle: "Clic para minimizar/expandir",
       toolbarCollapseTitle: "Contraer barra superior",
       toolbarExpandTitle: "Expandir barra superior",
@@ -141,7 +141,7 @@
       ]
     },
     en: {
-      panelTitle: `${P.name} Manager`,
+      panelTitle: "ChatFold",
       toggleMinTitle: "Click to minimize/expand",
       toolbarCollapseTitle: "Collapse top bar",
       toolbarExpandTitle: "Expand top bar",
@@ -1520,7 +1520,7 @@
             errorCount++;
           }
         } catch (err) {
-          console.warn(`[${P.name} Manager] Error deleting conversation:`, err);
+          console.warn("[ChatFold] Error deleting conversation:", err);
           errorCount++;
           document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
           await sleep(400);
