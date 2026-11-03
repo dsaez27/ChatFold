@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Conversation Manager for Gemini & ChatGPT"
+  },
+  "extDesc": {
+    "message": "Select, organize into folders, filter, export, and bulk delete multiple Gemini & ChatGPT chats easily with checkboxes."
+  }
+}

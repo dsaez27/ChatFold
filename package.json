@@ -1,0 +1,22 @@
+{
+  "name": "administrador-gemini-chatgpt",
+  "version": "3.3.0",
+  "private": true,
+  "description": "ExtensiÃ³n de Chrome: carpetas, protecciÃ³n, exportaciÃ³n y borrado masivo para Gemini y ChatGPT.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "lint": "eslint src tests scripts",
+    "test": "node --test tests/units.test.js tests/extension.test.js",
+    "check": "npm run lint && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "jsdom": "^25.0.0"
+  }
+}
+

@@ -1,0 +1,58 @@
+import { I18N } from './i18n.js';
+import { loadFolderData, saveFolderData } from './storage.js';
+
+// Filtros que existen siempre, independientemente de las carpetas del usuario.
+export const BUILTIN_FILTERS = ['ALL', 'UNASSIGNED', 'PROTECTED'];
+
+const folderState = loadFolderData();
+
+/**
+ * Estado compartido y mutable de la extensión.
+ * Los módulos ES no pueden reasignar bindings importados, por eso todo lo que cambia
+ * en tiempo de ejecución vive como propiedad de este único objeto.
+ */
+export const state = {
+  /** Datos persistidos (idioma, carpetas, asignaciones, protegidos, posición, vista). */
+  folderState,
+  // Retomar la última vista (filtro y orden) donde se dejó; si la carpeta ya no existe, volver a "Todas".
+  activeFolderFilter:
+    BUILTIN_FILTERS.includes(folderState.view.filter) || folderState.folders.some((f) => f.id === folderState.view.filter)
+      ? folderState.view.filter
+      : 'ALL',
+  searchQuery: '',
+  sortMode: folderState.view.sort,
+  toolbarCollapsed: folderState.view.toolbarCollapsed,
+
+  autoScrollActive: false,
+  autoScrollRunId: 0,
+
+  deletionInProgress: false,
+  deletionStopRequested: false,
+  lastCheckedCheckbox: null,
+
+  cachedSidebarEl: null,
+  cachedChatGptToken: null,
+  panelJustDragged: false,
+  toastTimer: null,
+  isRefreshing: false,
+  refreshDebounceTimer: null
+};
+
+/** Conversaciones seleccionadas en la barra lateral: id -> { id }. */
+export const selectedMap = new Map();
+
+/** Ids ya evaluados por la auto-clasificación (evita repetir el trabajo en cada refresco). */
+export const autoClassifiedVisited = new Set();
+
+/** Textos del idioma activo. */
+export const t = () => I18N[state.folderState.lang] || I18N.es;
+
+/** Guarda la vista actual (filtro, orden y barra contraída) para retomarla al recargar. */
+export function saveView() {
+  state.folderState.view = {
+    filter: state.activeFolderFilter,
+    sort: state.sortMode,
+    toolbarCollapsed: state.toolbarCollapsed
+  };
+  saveFolderData(state.folderState);
+}
