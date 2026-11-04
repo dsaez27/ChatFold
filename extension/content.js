@@ -1024,9 +1024,9 @@
           txt.textContent = folder.name;
           badge.appendChild(dot);
           badge.appendChild(txt);
-          badge.style.background = `linear-gradient(135deg, ${folder.color}55 0%, var(--gcm-badge-bg) 88%), var(--gcm-badge-bg)`;
+          badge.style.background = `linear-gradient(135deg, ${folder.color}44 0%, var(--gcm-badge-bg) 90%)`;
           badge.style.color = "var(--gcm-text-primary)";
-          badge.style.borderColor = folder.color;
+          badge.style.borderColor = `${folder.color}aa`;
         }
       } else if (badge) {
         badge.remove();

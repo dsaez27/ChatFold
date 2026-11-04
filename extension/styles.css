@@ -49,10 +49,10 @@
   --gcm-modal-input-border: rgba(255, 255, 255, 0.18);
   --gcm-checkbox-bg: rgba(25, 27, 32, 0.72);
   --gcm-checkbox-border: rgba(255, 255, 255, 0.38);
-  --gcm-lock-bg: #12141a;
-  --gcm-lock-shadow: -8px 0 10px 3px rgba(15,17,22,0.92), 0 2px 6px rgba(0,0,0,0.75);
-  --gcm-badge-bg: #12141a;
-  --gcm-badge-shadow: -12px 0 14px 5px rgba(15,17,22,0.94), 0 2px 8px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.22);
+  --gcm-lock-bg: rgba(18, 20, 26, 0.68);
+  --gcm-lock-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  --gcm-badge-bg: rgba(18, 20, 26, 0.52);
+  --gcm-badge-shadow: 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.22);
   --gcm-selected-bg: linear-gradient(90deg, rgba(66,133,244,0.26) 0%, rgba(66,133,244,0.08) 100%);
   --gcm-selected-shadow: inset 0 0 0 1px rgba(138,180,248,0.32);
   --gcm-cancel-btn-bg: rgba(255, 255, 255, 0.08);
@@ -112,10 +112,10 @@
     --gcm-modal-input-border: rgba(0, 0, 0, 0.15);
     --gcm-checkbox-bg: rgba(255, 255, 255, 0.92);
     --gcm-checkbox-border: rgba(0, 0, 0, 0.3);
-    --gcm-lock-bg: #f3f4f6;
-    --gcm-lock-shadow: -8px 0 10px 3px rgba(240,242,248,0.95), 0 2px 6px rgba(0,0,0,0.12);
-    --gcm-badge-bg: #f3f4f6;
-    --gcm-badge-shadow: -12px 0 14px 5px rgba(240,242,248,0.96), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
+    --gcm-lock-bg: rgba(243, 244, 246, 0.75);
+    --gcm-lock-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    --gcm-badge-bg: rgba(255, 255, 255, 0.62);
+    --gcm-badge-shadow: 0 2px 6px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
     --gcm-selected-bg: linear-gradient(90deg, rgba(66,133,244,0.14) 0%, rgba(66,133,244,0.04) 100%);
     --gcm-selected-shadow: inset 0 0 0 1px rgba(66,133,244,0.28);
     --gcm-cancel-btn-bg: rgba(0, 0, 0, 0.04);
@@ -792,41 +792,8 @@ a.gcm-chat-row[href*="/session/"],
   padding-left: 30px !important;
 }
 
-/* Reserva espacio a la derecha para que el título de la conversación se corte con "..." antes del tag */
-.gcm-chat-row.gcm-has-badge {
-  padding-right: 88px !important;
-}
-
-.gcm-chat-row.gcm-has-badge a[href*="/app/"],
-.gcm-chat-row.gcm-has-badge a[href*="/c/"],
-.gcm-chat-row.gcm-has-badge a[href*="/codex/tasks/"],
-.gcm-chat-row.gcm-has-badge a[href*="/tasks/"],
-.gcm-chat-row.gcm-has-badge a[href*="/chat/"],
-.gcm-chat-row.gcm-has-badge a[href*="/session/"],
-.gcm-chat-row.gcm-has-badge .conversation-title {
-  padding-right: 76px !important;
-  box-sizing: border-box !important;
-}
-
-.gcm-chat-row.gcm-has-lock:not(.gcm-has-badge) {
-  padding-right: 52px !important;
-}
-
-.gcm-chat-row.gcm-has-badge.gcm-has-lock {
-  padding-right: 112px !important;
-}
-
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/app/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/c/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/codex/tasks/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/tasks/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/chat/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/session/"],
-.gcm-chat-row.gcm-has-badge.gcm-has-lock .conversation-title {
-  padding-right: 98px !important;
-  box-sizing: border-box !important;
-}
-
+/* El título de la conversación conserva todo su ancho natural (sin doble/triple padding-right
+   que lo cortaba a 4 letras antes de la etiqueta) y fluye por detrás del badge translúcido */
 .gcm-chat-row.gcm-selected {
   background: var(--gcm-selected-bg) !important;
   box-shadow: var(--gcm-selected-shadow) !important;
@@ -869,9 +836,9 @@ li.gcm-hidden-by-filter {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  padding: 2.5px 8px 2.5px 6px !important;
+  padding: 2px 7px 2px 5px !important;
   border-radius: 99px !important;
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   font-weight: 700 !important;
   letter-spacing: 0.2px !important;
   line-height: 1.2 !important;
@@ -880,9 +847,11 @@ li.gcm-hidden-by-filter {
   max-width: 82px !important;
   overflow: hidden !important;
   background-color: var(--gcm-badge-bg) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   color: var(--gcm-text-primary) !important;
-  text-shadow: none !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
   pointer-events: none !important;
   position: absolute !important;
   right: 34px !important;
@@ -890,6 +859,11 @@ li.gcm-hidden-by-filter {
   transform: translateY(-50%) !important;
   z-index: 9998 !important;
   box-shadow: var(--gcm-badge-shadow) !important;
+  transition: opacity 0.18s ease !important;
+}
+
+.gcm-chat-row:hover .gcm-chat-badge {
+  opacity: 0.16 !important;
 }
 
 .gcm-chat-row.gcm-has-lock .gcm-chat-badge {
