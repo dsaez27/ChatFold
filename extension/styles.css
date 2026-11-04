@@ -694,12 +694,16 @@
 }
 
 .gcm-chat-row a[href*="/c/"],
+.gcm-chat-row a[href*="/codex/tasks/"],
+.gcm-chat-row a[href*="/tasks/"],
 .gcm-chat-row a[href*="/chat/"],
 .gcm-chat-row a[href*="/session/"] {
   padding-left: 6px !important;
 }
 
 a.gcm-chat-row[href*="/c/"],
+a.gcm-chat-row[href*="/codex/tasks/"],
+a.gcm-chat-row[href*="/tasks/"],
 a.gcm-chat-row[href*="/chat/"],
 a.gcm-chat-row[href*="/session/"] {
   padding-left: 30px !important;
@@ -712,6 +716,8 @@ a.gcm-chat-row[href*="/session/"] {
 
 .gcm-chat-row.gcm-has-badge a[href*="/app/"],
 .gcm-chat-row.gcm-has-badge a[href*="/c/"],
+.gcm-chat-row.gcm-has-badge a[href*="/codex/tasks/"],
+.gcm-chat-row.gcm-has-badge a[href*="/tasks/"],
 .gcm-chat-row.gcm-has-badge a[href*="/chat/"],
 .gcm-chat-row.gcm-has-badge a[href*="/session/"],
 .gcm-chat-row.gcm-has-badge .conversation-title {
@@ -729,6 +735,8 @@ a.gcm-chat-row[href*="/session/"] {
 
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/app/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/c/"],
+.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/codex/tasks/"],
+.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/tasks/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/chat/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/session/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock .conversation-title {

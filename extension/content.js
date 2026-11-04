@@ -85,7 +85,7 @@
     return null;
   }
   var PLATFORM_KEY = detectPlatform();
-  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/chat/"], a[href*="/session/"]';
+  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"]';
   var PLATFORMS = {
     gemini: {
       name: "Gemini",
@@ -110,17 +110,20 @@
       name: "ChatGPT",
       storageKey: "gcm_chatgpt_folders_data_v1",
       legacyStorageKey: null,
-      convHrefRegex: /\/c\/([0-9a-zA-Z_-]{5,})/,
-      buildUrl: (id) => `https://chatgpt.com/c/${id}`,
+      convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{5,})/,
+      buildUrl: (id) => id.startsWith("task_") ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`,
       selectors: {
         sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
-        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"]',
+        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/task_"]',
         rowClosest: [
           "[data-sidebar-chatgpt-conversation-key]",
           'li[data-testid^="history-item"]',
           'div[data-testid^="history-item"]',
           "li",
-          "a.__menu-item"
+          "div.group",
+          "a.__menu-item",
+          'a[href*="/codex/tasks/"]',
+          'a[href*="/tasks/"]'
         ],
         optionsTrigger: 'button[data-testid^="history-item-"][data-testid$="-options"], button[data-testid*="options"], button[aria-haspopup="menu"], button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',
         menuPanel: '[role="menu"], [data-radix-menu-content]',
@@ -1781,12 +1784,20 @@ ${text}` : text;
   }
 
   // src/deletion.js
-  function isPinOrArchiveButton(btn) {
+  function isPinOrArchiveButton(btn, allowArchive = false) {
     if (!btn) return true;
     const label = ((btn.getAttribute?.("aria-label") || "") + " " + (btn.getAttribute?.("title") || "") + " " + (btn.getAttribute?.("data-testid") || "")).toLowerCase();
+    if (allowArchive && label.includes("archiv")) {
+      return false;
+    }
     return label.includes("fijar") || label.includes("desfijar") || label.includes("pin") || label.includes("unpin") || label.includes("archiv");
   }
-  function findOptionsTrigger(row, link) {
+  function isRemoteTask(targetId, link) {
+    if (typeof targetId === "string" && targetId.startsWith("task_")) return true;
+    const href = link?.getAttribute?.("href") || "";
+    return href.includes("/codex/tasks/") || href.includes("/tasks/");
+  }
+  function findOptionsTrigger(row, link, isTask = false) {
     const targets = [row, link, row.parentElement].filter(Boolean);
     for (const tEl of targets) {
       tEl.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
@@ -1812,7 +1823,7 @@ ${text}` : text;
     for (const sel of prioritySelectors) {
       for (const scope of scopes) {
         const candidates = Array.from(scope.querySelectorAll(sel));
-        const valid = candidates.find((b) => !isPinOrArchiveButton(b));
+        const valid = candidates.find((b) => !isPinOrArchiveButton(b, isTask));
         if (valid) return valid;
       }
     }
@@ -1903,16 +1914,58 @@ ${text}` : text;
       body: JSON.stringify({ is_visible: false })
     });
   }
-  async function deleteChatGptViaApi(targetId, row) {
+  async function deleteOrArchiveRemoteTaskApi(targetId, token) {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    };
+    try {
+      const delRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers
+      });
+      if (delRes.ok) return delRes;
+      if (delRes.status === 401 || delRes.status === 403) return delRes;
+    } catch (_) {
+    }
+    try {
+      const archRes = await fetch(`/backend-api/wham/tasks/${targetId}/archive`, {
+        method: "POST",
+        credentials: "include",
+        headers
+      });
+      if (archRes.ok) {
+        try {
+          await fetch(`/backend-api/wham/tasks/${targetId}`, {
+            method: "DELETE",
+            credentials: "include",
+            headers
+          });
+        } catch (_) {
+        }
+        return archRes;
+      }
+      if (archRes.status === 401 || archRes.status === 403) return archRes;
+    } catch (_) {
+    }
+    return fetch(`/backend-api/tasks/${targetId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers
+    });
+  }
+  async function deleteChatGptViaApi(targetId, row, isTask = false) {
     if (PLATFORM_KEY !== "chatgpt" || typeof fetch !== "function") return false;
     try {
       let token = await getChatGptToken();
       if (!token) return false;
-      let res = await hideChatGptConversation(targetId, token);
+      const runCall = (tk) => isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
+      let res = await runCall(token);
       if (res.status === 401 || res.status === 403) {
         token = await getChatGptToken(true);
         if (!token) return false;
-        res = await hideChatGptConversation(targetId, token);
+        res = await runCall(token);
       }
       if (res.ok) {
         removeDeletedRowFromDOM(row, targetId);
@@ -1928,10 +1981,15 @@ ${text}` : text;
     const found = findRowById(targetId);
     if (!found) return false;
     const { row, link } = found;
+    const isTask = isRemoteTask(targetId, link);
+    if (PLATFORM_KEY === "chatgpt" && isTask) {
+      const apiTaskOk = await deleteChatGptViaApi(targetId, row, true);
+      if (apiTaskOk) return true;
+    }
     row.scrollIntoView({ block: "center" });
     await sleep(180);
     try {
-      const trigger = await pollUntil(() => findOptionsTrigger(row, link), 1200, 80);
+      const trigger = await pollUntil(() => findOptionsTrigger(row, link, isTask), 1200, 80);
       if (!trigger) {
         throw new Error("Options menu button not found.");
       }
@@ -1941,6 +1999,12 @@ ${text}` : text;
         2200
       );
       if (!menu) {
+        if (isTask) {
+          await sleep(450);
+          removeDeletedRowFromDOM(row, targetId);
+          cleanupEmptySidebarItems();
+          return true;
+        }
         throw new Error("Menu did not open.");
       }
       await sleep(180);
@@ -1949,17 +2013,24 @@ ${text}` : text;
         const txt = (el.textContent || "").toLowerCase();
         const testId = (el.getAttribute("data-testid") || "").toLowerCase();
         const cls = typeof el.className === "string" ? el.className.toLowerCase() : "";
-        return testId.includes("delete") || cls.includes("text-danger") || cls.includes("text-token-text-error") || cls.includes("text-red") || txt.includes("eliminar") || txt.includes("delete") || txt.includes("borrar") || el.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]');
+        return testId.includes("delete") || isTask && testId.includes("archive") || cls.includes("text-danger") || cls.includes("text-token-text-error") || cls.includes("text-red") || txt.includes("eliminar") || txt.includes("delete") || txt.includes("borrar") || isTask && (txt.includes("archivar") || txt.includes("archive")) || el.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]');
       });
       if (!deleteBtn) {
         throw new Error("Delete option not found.");
       }
+      const isArchiveAction = isTask && ((deleteBtn.textContent || "").toLowerCase().includes("archiv") || (deleteBtn.getAttribute("data-testid") || "").toLowerCase().includes("archive"));
       realClick(deleteBtn);
       const dialog = await pollUntil(
         () => Array.from(document.querySelectorAll(SELECTORS.confirmDialog)).find(isActiveOverlay),
-        2200
+        isArchiveAction ? 1e3 : 2200
       );
       if (!dialog) {
+        if (isArchiveAction) {
+          await sleep(450);
+          removeDeletedRowFromDOM(row, targetId);
+          cleanupEmptySidebarItems();
+          return true;
+        }
         throw new Error("Confirm dialog did not appear.");
       }
       await sleep(200);
@@ -1968,7 +2039,7 @@ ${text}` : text;
         const dialogBtns = Array.from(dialog.querySelectorAll("button"));
         confirmBtn = dialogBtns.find((b) => {
           const txt = (b.textContent || "").trim().toLowerCase();
-          return txt === "eliminar" || txt === "delete" || txt === "borrar";
+          return txt === "eliminar" || txt === "delete" || txt === "borrar" || isTask && (txt.includes("archivar") || txt.includes("archive") || txt.includes("detener") || txt.includes("stop"));
         });
         if (!confirmBtn && dialogBtns.length === 2) confirmBtn = dialogBtns[1];
       }
@@ -1984,7 +2055,7 @@ ${text}` : text;
     } catch (domErr) {
       if (PLATFORM_KEY === "chatgpt") {
         document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-        const apiOk = await deleteChatGptViaApi(targetId, row);
+        const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
         if (apiOk) {
           removeDeletedRowFromDOM(row, targetId);
           cleanupEmptySidebarItems();

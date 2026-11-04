@@ -18,7 +18,7 @@ const FIXTURES = {
     html: `<body><nav aria-label="Historial"><ol>
       <li data-testid="history-item-0"><a href="/c/aaaaa11111"><div dir="auto">Fix javascript bug</div></a></li>
       <li data-testid="history-item-1"><a href="/c/bbbbb22222"><div dir="auto">Course summary</div></a></li>
-      <li data-testid="history-item-2"><a href="/c/ccccc33333"><div dir="auto">Cooking tips</div></a></li>
+      <li data-testid="history-item-2"><a href="/codex/tasks/task_e_ccccc33333"><div dir="auto">Remote Codex task</div></a></li>
     </ol></nav><main><div data-message-author-role="user">hola</div><div data-message-author-role="assistant">mundo</div><textarea id="prompt-textarea"></textarea></main></body>`
   },
   claude: {

@@ -93,3 +93,32 @@ test('datos guardados corruptos no rompen la carga', async () => {
   assert.ok($(w, '#gcm-folders-box'));
   w.close();
 });
+
+test('chatgpt: detecta y borra tareas remotas (/codex/tasks/task_...) via API', async () => {
+  const w = loadExtension(bundle, 'chatgpt');
+  const calledUrls = [];
+  w.fetch = async (url) => {
+    calledUrls.push(url);
+    if (url === '/api/auth/session') {
+      return { ok: true, status: 200, json: async () => ({ accessToken: 'tok_test_123' }) };
+    }
+    if (url.startsWith('/backend-api/wham/tasks/')) {
+      return { ok: true, status: 200 };
+    }
+    return { ok: false, status: 404 };
+  };
+  await sleep(1100);
+  const taskCb = $(w, '.gcm-checkbox[data-conv-id="task_e_ccccc33333"]');
+  assert.ok(taskCb, 'checkbox inyectado en la tarea remota');
+  click(w, taskCb);
+  await sleep(100);
+  click(w, $(w, '#gcm-delete-btn'));
+  await sleep(150);
+  const confirmBtn = $(w, '#gcm-modal-overlay .gcm-btn-danger');
+  assert.ok(confirmBtn, 'modal de confirmación abierto');
+  click(w, confirmBtn);
+  await sleep(600);
+  assert.ok(calledUrls.includes('/backend-api/wham/tasks/task_e_ccccc33333'), 'llamó al endpoint de borrado de tareas remotas');
+  assert.equal($(w, 'a[href*="/codex/tasks/task_e_ccccc33333"]'), null, 'fila eliminada del DOM');
+  w.close();
+});

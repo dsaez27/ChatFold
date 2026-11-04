@@ -24,9 +24,9 @@ export function detectPlatform() {
 /** 'gemini' | 'chatgpt' | 'claude' | 'deepseek' | 'opencode' | null */
 export const PLATFORM_KEY = detectPlatform();
 
-/** Selector universal de enlaces a conversaciones en todas las plataformas soportadas. */
+/** Selector universal de enlaces a conversaciones y tareas remotas en todas las plataformas soportadas. */
 export const CONV_LINK_SELECTOR =
-  'a[href*="/app/"], a[href*="/c/"], a[href*="/chat/"], a[href*="/session/"]';
+  'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"]';
 
 // Configuración específica por plataforma (Gemini, ChatGPT, Claude, DeepSeek y OpenCode)
 export const PLATFORMS = {
@@ -53,18 +53,21 @@ export const PLATFORMS = {
     name: 'ChatGPT',
     storageKey: 'gcm_chatgpt_folders_data_v1',
     legacyStorageKey: null,
-    convHrefRegex: /\/c\/([0-9a-zA-Z_-]{5,})/,
-    buildUrl: (id) => `https://chatgpt.com/c/${id}`,
+    convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{5,})/,
+    buildUrl: (id) => (id.startsWith('task_') ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`),
     selectors: {
       sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
       conversationLinks:
-        '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"]',
+        '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/task_"]',
       rowClosest: [
         '[data-sidebar-chatgpt-conversation-key]',
         'li[data-testid^="history-item"]',
         'div[data-testid^="history-item"]',
         'li',
-        'a.__menu-item'
+        'div.group',
+        'a.__menu-item',
+        'a[href*="/codex/tasks/"]',
+        'a[href*="/tasks/"]'
       ],
       optionsTrigger:
         'button[data-testid^="history-item-"][data-testid$="-options"], button[data-testid*="options"], button[aria-haspopup="menu"], button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',

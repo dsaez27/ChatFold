@@ -7,7 +7,7 @@ import { saveFolderData } from './storage.js';
 import { updateToolbarState } from './toolbar.js';
 import { isActiveOverlay, pollUntil, realClick, sleep } from './utils.js';
 
-function isPinOrArchiveButton(btn) {
+function isPinOrArchiveButton(btn, allowArchive = false) {
   if (!btn) return true;
   const label = (
     (btn.getAttribute?.('aria-label') || '') +
@@ -16,6 +16,9 @@ function isPinOrArchiveButton(btn) {
     ' ' +
     (btn.getAttribute?.('data-testid') || '')
   ).toLowerCase();
+  if (allowArchive && label.includes('archiv')) {
+    return false;
+  }
   return (
     label.includes('fijar') ||
     label.includes('desfijar') ||
@@ -25,7 +28,14 @@ function isPinOrArchiveButton(btn) {
   );
 }
 
-function findOptionsTrigger(row, link) {
+/** Determina si una fila/ID corresponde a una Tarea Remota de ChatGPT / Codex (`/codex/tasks/` o `task_...`). */
+function isRemoteTask(targetId, link) {
+  if (typeof targetId === 'string' && targetId.startsWith('task_')) return true;
+  const href = link?.getAttribute?.('href') || '';
+  return href.includes('/codex/tasks/') || href.includes('/tasks/');
+}
+
+function findOptionsTrigger(row, link, isTask = false) {
   const targets = [row, link, row.parentElement].filter(Boolean);
   for (const tEl of targets) {
     tEl.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
@@ -58,7 +68,7 @@ function findOptionsTrigger(row, link) {
   for (const sel of prioritySelectors) {
     for (const scope of scopes) {
       const candidates = Array.from(scope.querySelectorAll(sel));
-      const valid = candidates.find((b) => !isPinOrArchiveButton(b));
+      const valid = candidates.find((b) => !isPinOrArchiveButton(b, isTask));
       if (valid) return valid;
     }
   }
@@ -161,18 +171,65 @@ function hideChatGptConversation(targetId, token) {
   });
 }
 
-async function deleteChatGptViaApi(targetId, row) {
+async function deleteOrArchiveRemoteTaskApi(targetId, token) {
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`
+  };
+  // 1) Intentar DELETE directo de la tarea remota (/backend-api/wham/tasks/{id})
+  try {
+    const delRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers
+    });
+    if (delRes.ok) return delRes;
+    if (delRes.status === 401 || delRes.status === 403) return delRes;
+  } catch (_) {}
+
+  // 2) Fallback: archivar la tarea remota (/backend-api/wham/tasks/{id}/archive) y luego intentar DELETE
+  try {
+    const archRes = await fetch(`/backend-api/wham/tasks/${targetId}/archive`, {
+      method: 'POST',
+      credentials: 'include',
+      headers
+    });
+    if (archRes.ok) {
+      try {
+        await fetch(`/backend-api/wham/tasks/${targetId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers
+        });
+      } catch (_) {}
+      return archRes;
+    }
+    if (archRes.status === 401 || archRes.status === 403) return archRes;
+  } catch (_) {}
+
+  // 3) Segundo fallback para tareas programadas estándar (/backend-api/tasks/{id})
+  return fetch(`/backend-api/tasks/${targetId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers
+  });
+}
+
+async function deleteChatGptViaApi(targetId, row, isTask = false) {
   if (PLATFORM_KEY !== 'chatgpt' || typeof fetch !== 'function') return false;
   try {
     let token = await getChatGptToken();
     if (!token) return false;
 
-    let res = await hideChatGptConversation(targetId, token);
+    const runCall = (tk) =>
+      isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
+
+    let res = await runCall(token);
     // Token vencido: pedir uno nuevo y reintentar una sola vez.
     if (res.status === 401 || res.status === 403) {
       token = await getChatGptToken(true);
       if (!token) return false;
-      res = await hideChatGptConversation(targetId, token);
+      res = await runCall(token);
     }
 
     if (res.ok) {
@@ -190,11 +247,20 @@ async function deleteSingleConversation(targetId) {
   if (!found) return false;
 
   const { row, link } = found;
+  const isTask = isRemoteTask(targetId, link);
+
+  // Para tareas remotas de ChatGPT/Codex (task_...), la API directa (/backend-api/wham/tasks)
+  // permite borrar o archivar en un solo paso sin que falle por ausencia del botón "Eliminar" en el menú.
+  if (PLATFORM_KEY === 'chatgpt' && isTask) {
+    const apiTaskOk = await deleteChatGptViaApi(targetId, row, true);
+    if (apiTaskOk) return true;
+  }
+
   row.scrollIntoView({ block: 'center' });
   await sleep(180);
 
   try {
-    const trigger = await pollUntil(() => findOptionsTrigger(row, link), 1200, 80);
+    const trigger = await pollUntil(() => findOptionsTrigger(row, link, isTask), 1200, 80);
     if (!trigger) {
       throw new Error('Options menu button not found.');
     }
@@ -206,6 +272,13 @@ async function deleteSingleConversation(targetId) {
       2200
     );
     if (!menu) {
+      // Si el botón era un botón directo de Archivar (sin submenú) en una tarea remota:
+      if (isTask) {
+        await sleep(450);
+        removeDeletedRowFromDOM(row, targetId);
+        cleanupEmptySidebarItems();
+        return true;
+      }
       throw new Error('Menu did not open.');
     }
 
@@ -218,12 +291,14 @@ async function deleteSingleConversation(targetId) {
       const cls = typeof el.className === 'string' ? el.className.toLowerCase() : '';
       return (
         testId.includes('delete') ||
+        (isTask && testId.includes('archive')) ||
         cls.includes('text-danger') ||
         cls.includes('text-token-text-error') ||
         cls.includes('text-red') ||
         txt.includes('eliminar') ||
         txt.includes('delete') ||
         txt.includes('borrar') ||
+        (isTask && (txt.includes('archivar') || txt.includes('archive'))) ||
         el.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]')
       );
     });
@@ -232,13 +307,21 @@ async function deleteSingleConversation(targetId) {
       throw new Error('Delete option not found.');
     }
 
+    const isArchiveAction = isTask && ((deleteBtn.textContent || '').toLowerCase().includes('archiv') || (deleteBtn.getAttribute('data-testid') || '').toLowerCase().includes('archive'));
     realClick(deleteBtn);
 
     const dialog = await pollUntil(
       () => Array.from(document.querySelectorAll(SELECTORS.confirmDialog)).find(isActiveOverlay),
-      2200
+      isArchiveAction ? 1000 : 2200
     );
     if (!dialog) {
+      // Archivar una tarea remota que ya terminó no suele pedir diálogo de confirmación
+      if (isArchiveAction) {
+        await sleep(450);
+        removeDeletedRowFromDOM(row, targetId);
+        cleanupEmptySidebarItems();
+        return true;
+      }
       throw new Error('Confirm dialog did not appear.');
     }
 
@@ -249,7 +332,12 @@ async function deleteSingleConversation(targetId) {
       const dialogBtns = Array.from(dialog.querySelectorAll('button'));
       confirmBtn = dialogBtns.find((b) => {
         const txt = (b.textContent || '').trim().toLowerCase();
-        return txt === 'eliminar' || txt === 'delete' || txt === 'borrar';
+        return (
+          txt === 'eliminar' ||
+          txt === 'delete' ||
+          txt === 'borrar' ||
+          (isTask && (txt.includes('archivar') || txt.includes('archive') || txt.includes('detener') || txt.includes('stop')))
+        );
       });
       // Último recurso: solo si el diálogo tiene exactamente dos botones (cancelar + confirmar).
       // Con más botones no se adivina: podría pulsarse una acción distinta a borrar.
@@ -269,7 +357,7 @@ async function deleteSingleConversation(targetId) {
   } catch (domErr) {
     if (PLATFORM_KEY === 'chatgpt') {
       document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      const apiOk = await deleteChatGptViaApi(targetId, row);
+      const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
       if (apiOk) {
         removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
