@@ -1,8 +1,8 @@
 {
   "extName": {
-    "message": "ChatFold: Gestor de Carpetas para Gemini y ChatGPT"
+    "message": "ChatFold: Gestor de Carpetas para Gemini, ChatGPT, Claude, DeepSeek y OpenCode"
   },
   "extDesc": {
-    "message": "Organiza en carpetas, clasifica automáticamente, protege y administra tus conversaciones en Gemini y ChatGPT con ChatFold."
+    "message": "Organiza en carpetas inteligentes, sincroniza en la nube, usa prompts rápidos, protege y administra tus chats en Gemini, ChatGPT, Claude, DeepSeek y OpenCode."
   }
 }

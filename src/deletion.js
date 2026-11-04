@@ -1,6 +1,6 @@
 import { showConfirmModal, updateStatusToast } from './dialogs.js';
 import { refreshUI } from './main.js';
-import { PLATFORM_KEY, SELECTORS } from './platform.js';
+import { CONV_LINK_SELECTOR, PLATFORM_KEY, SELECTORS } from './platform.js';
 import { findRowById, getSidebarElement, isSingleRowContainer } from './sidebar.js';
 import { selectedMap, state, t } from './state.js';
 import { saveFolderData } from './storage.js';
@@ -36,7 +36,7 @@ function findOptionsTrigger(row, link) {
 
   // Seguridad: nunca buscar el botón de opciones en un contenedor que tenga OTRAS conversaciones,
   // o se abriría el menú (y se borraría) la conversación equivocada.
-  const countConvLinks = (el) => el.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length;
+  const countConvLinks = (el) => el.querySelectorAll(CONV_LINK_SELECTOR).length;
   const scopes = [];
   scopes.push(row);
   if (row.parentElement && row.parentElement !== document.body && countConvLinks(row.parentElement) <= 1) {
@@ -93,9 +93,9 @@ function removeDeletedRowFromDOM(row, targetId) {
   containerToRemove.remove();
 
   if (parentList && (parentList.tagName === 'OL' || parentList.tagName === 'UL')) {
-    if (parentList.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+    if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
       const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
-      if (sectionWrapper && sectionWrapper.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+      if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
         sectionWrapper.remove();
       }
     }
@@ -106,15 +106,15 @@ function cleanupEmptySidebarItems() {
   const sidebar = getSidebarElement() || document;
   const lis = sidebar.querySelectorAll('li');
   lis.forEach((li) => {
-    if (!li.querySelector('a[href*="/app/"], a[href*="/c/"]') && !li.textContent?.trim()) {
+    if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
       li.remove();
     }
   });
   const lists = sidebar.querySelectorAll('ol, ul');
   lists.forEach((list) => {
-    if (list.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+    if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
       const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
-      if (sectionWrapper && sectionWrapper.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+      if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
         sectionWrapper.remove();
       }
     }

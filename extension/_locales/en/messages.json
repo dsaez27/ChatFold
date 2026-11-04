@@ -1,8 +1,8 @@
 {
   "extName": {
-    "message": "ChatFold - Folder Manager for Gemini & ChatGPT"
+    "message": "ChatFold - Folder Manager for Gemini, ChatGPT, Claude, DeepSeek & OpenCode"
   },
   "extDesc": {
-    "message": "Organize into folders, auto-classify, protect and manage your Gemini & ChatGPT chats easily with ChatFold."
+    "message": "Organize into smart folders, cloud sync, use quick prompts, protect and manage your chats across Gemini, ChatGPT, Claude, DeepSeek & OpenCode."
   }
 }

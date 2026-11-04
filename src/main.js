@@ -1,5 +1,5 @@
 import { applyFolderBadgesAndFilter, runAutoClassification } from './folders.js';
-import { injectSidebarFoldersPanel } from './panel.js';
+import { injectSidebarFoldersPanel, registerGlobalListeners } from './panel.js';
 import { injectCheckboxes, setupDelegatedSidebarListener } from './selection.js';
 import { getConversationRows, getSidebarElement } from './sidebar.js';
 import { state } from './state.js';
@@ -36,6 +36,7 @@ export function init() {
     setTimeout(init, 300);
     return;
   }
+  registerGlobalListeners();
   setupDelegatedSidebarListener();
   setTimeout(refreshUI, 800);
 

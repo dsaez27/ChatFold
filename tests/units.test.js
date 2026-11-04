@@ -26,6 +26,8 @@ test('normalizeStoredState descarta datos corruptos y aplica valores por defecto
   const s = normalizeStoredState({ lang: 'fr', folders: [{ id: 1 }, { id: 'a', name: 'X', keywords: ['A', 3] }], assignments: [], pos: { left: 'x' } }, 'es');
   assert.equal(s.lang, 'es');
   assert.deepEqual(s.folders, [{ id: 'a', name: 'X', color: '#4285f4', keywords: ['a'] }]);
+  assert.equal(Array.isArray(s.prompts), true);
+  assert.equal(s.prompts.length, 3);
   assert.deepEqual(s.assignments, {});
   assert.equal(s.pos, null);
   assert.deepEqual(s.view, { filter: 'ALL', sort: 'DEFAULT', toolbarCollapsed: false });

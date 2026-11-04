@@ -4,9 +4,10 @@ import { openCreateFolderModal } from './dialogs.js';
 import { applyFolderBadgesAndFilter, deleteFolderById } from './folders.js';
 import { refreshUI } from './main.js';
 import { APP_VERSION, P } from './platform.js';
+import { openPromptsModal } from './prompts.js';
 import { getConversationRows } from './sidebar.js';
 import { BUILTIN_FILTERS, autoClassifiedVisited, saveView, state, t } from './state.js';
-import { normalizeStoredState, saveFolderData } from './storage.js';
+import { initCloudSync, normalizeStoredState, saveFolderData } from './storage.js';
 
 function toggleLanguage() {
   state.folderState.lang = state.folderState.lang === 'es' ? 'en' : 'es';
@@ -224,34 +225,87 @@ function enablePanelDrag(box, handle) {
 }
 
 export function registerGlobalListeners() {
+  const applyExternalState = (incoming) => {
+    const keepView = { filter: state.activeFolderFilter, sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed };
+    const langChanged = incoming.lang !== state.folderState.lang;
+    state.folderState = { ...incoming, view: keepView };
+    if (!BUILTIN_FILTERS.includes(state.activeFolderFilter) && !state.folderState.folders.some((f) => f.id === state.activeFolderFilter)) {
+      state.activeFolderFilter = 'ALL';
+    }
+    autoClassifiedVisited.clear();
+    if (langChanged) {
+      document.getElementById('gcm-toolbar')?.remove();
+      document.getElementById('gcm-folders-box')?.remove();
+    } else {
+      const box = document.getElementById('gcm-folders-box');
+      if (box) {
+        box.classList.toggle('gcm-minimized', state.folderState.minimized);
+        clampBoxPosition(box);
+      }
+      const pills = document.getElementById('gcm-pills-container');
+      if (pills) delete pills.dataset.sig;
+    }
+    refreshUI();
+  };
+
   // Otra pestaña (del mismo sitio) guardó cambios: adoptarlos para no pisarlos con datos viejos
   // al próximo guardado. Se conserva la vista (filtro/orden) de ESTA pestaña.
   window.addEventListener('storage', (e) => {
     if (e.key !== P.storageKey || !e.newValue) return;
     try {
       const incoming = normalizeStoredState(JSON.parse(e.newValue), state.folderState.lang);
-      const keepView = { filter: state.activeFolderFilter, sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed };
-      const langChanged = incoming.lang !== state.folderState.lang;
-      state.folderState = { ...incoming, view: keepView };
-      if (!BUILTIN_FILTERS.includes(state.activeFolderFilter) && !state.folderState.folders.some((f) => f.id === state.activeFolderFilter)) {
-        state.activeFolderFilter = 'ALL';
-      }
-      autoClassifiedVisited.clear();
-      if (langChanged) {
-        document.getElementById('gcm-toolbar')?.remove();
-        document.getElementById('gcm-folders-box')?.remove();
-      } else {
-        const box = document.getElementById('gcm-folders-box');
-        if (box) {
-          box.classList.toggle('gcm-minimized', state.folderState.minimized);
-          clampBoxPosition(box);
-        }
-        const pills = document.getElementById('gcm-pills-container');
-        if (pills) delete pills.dataset.sig;
-      }
-      refreshUI();
+      applyExternalState(incoming);
     } catch (_) {}
   });
+
+  // Sincronización en la nube con chrome.storage.sync
+  initCloudSync(
+    () => state.folderState,
+    (merged) => applyExternalState(merged)
+  );
+
+  // Atajos de teclado globales: Alt+Shift+F (minimizar/expandir panel) y Alt+Shift+S (buscar conversación)
+  document.addEventListener('keydown', (e) => {
+    if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey) return;
+    const key = (e.key || '').toUpperCase();
+    if (key === 'F') {
+      e.preventDefault();
+      state.folderState.minimized = !state.folderState.minimized;
+      saveFolderData(state.folderState);
+      refreshUI();
+    } else if (key === 'S') {
+      e.preventDefault();
+      if (state.folderState.minimized) {
+        state.folderState.minimized = false;
+        saveFolderData(state.folderState);
+        refreshUI();
+      }
+      const input = document.querySelector('#gcm-folders-box .gcm-search-input');
+      input?.focus();
+      input?.select();
+    }
+  });
+
+  // Mensajes desde el Popup de la extensión (popup.js)
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage?.addListener) {
+      chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+        if (!msg || typeof msg.action !== 'string') return;
+        if (msg.action === 'TOGGLE_PANEL') {
+          state.folderState.minimized = !state.folderState.minimized;
+          saveFolderData(state.folderState);
+          refreshUI();
+          sendResponse?.({ ok: true, minimized: state.folderState.minimized });
+        } else if (msg.action === 'OPEN_PROMPTS') {
+          openPromptsModal();
+          sendResponse?.({ ok: true });
+        } else if (msg.action === 'EXPORT_BACKUP') {
+          exportBackupConfig();
+          sendResponse?.({ ok: true });
+        }
+      });
+    }
+  } catch (_) {}
 
   window.addEventListener('resize', () => clampBoxPosition(document.getElementById('gcm-folders-box')));
 }
@@ -391,7 +445,15 @@ function buildFoldersPanelDOM(box) {
   restoreBtn.title = t().importTitle;
   restoreBtn.addEventListener('click', importBackupConfig);
 
+  const promptsBtn = document.createElement('button');
+  promptsBtn.id = 'gcm-prompts-btn';
+  promptsBtn.className = 'gcm-footer-btn';
+  promptsBtn.textContent = t().promptsBtn;
+  promptsBtn.title = t().promptsBtnTitle;
+  promptsBtn.addEventListener('click', openPromptsModal);
+
   footer.appendChild(scrollBtn);
+  footer.appendChild(promptsBtn);
   footer.appendChild(backupBtn);
   footer.appendChild(restoreBtn);
 

@@ -2,23 +2,31 @@
   <img src="assets/chatfold-full.png" alt="ChatFold" width="380" />
 </p>
 
-# ChatFold: Gestor de Carpetas para Gemini & ChatGPT
+# ChatFold v3.4.0: Gestor Universal de Carpetas para Gemini, ChatGPT, Claude, DeepSeek & OpenCode
 
-**ChatFold** es una extensión de Chrome (Manifest V3) que transforma tu experiencia en **Gemini** y **ChatGPT**: añade carpetas inteligentes con clasificación automática por palabras clave, barra superior contraíble, búsqueda instantánea, protección de chats contra borrado accidental, selección múltiple, borrado masivo seguro, exportación a Markdown y respaldo/importación en JSON.
+**ChatFold** es una extensión de Chrome (Manifest V3) que transforma tu experiencia en **Google Gemini**, **OpenAI ChatGPT**, **Anthropic Claude**, **DeepSeek** y **OpenCode**: añade carpetas inteligentes con clasificación automática por palabras clave, sincronización en la nube (`chrome.storage.sync`), bóveda de Prompts rápidos, popup de control, atajos de teclado, barra superior contraíble, búsqueda instantánea, protección de chats con candado, selección múltiple, borrado masivo seguro, exportación a Markdown y respaldo/importación en JSON.
+
+## Novedades en v3.4.0
+
+- 🌐 **Soporte Universal Multi-IA**: Compatible con **Gemini**, **ChatGPT**, **Claude**, **DeepSeek** y **OpenCode**.
+- ☁️ **Cloud Sync Automático (`chrome.storage.sync`)**: Sincroniza carpetas, reglas, asignaciones, chats protegidos y prompts entre tus dispositivos.
+- ⚡ **Bóveda de Prompts Rápidos (`src/prompts.js`)**: Biblioteca reutilizable de prompts con inserción en 1 clic directamente en el cuadro de texto del chat activo.
+- 🎛️ **Popup de Extensión & Atajos de Teclado**: Panel rápido en la barra de Chrome (`popup.html`) con métricas por plataforma y accesos directos (`Alt+Shift+F` para mostrar/ocultar panel, `Alt+Shift+S` para buscar).
 
 ## Estructura
 
 ```
 ├── src/                      Código fuente (módulos ES)
-│   ├── content.js            Punto de entrada (arranca solo en Gemini/ChatGPT)
+│   ├── content.js            Punto de entrada (arranca en Gemini/ChatGPT/Claude/DeepSeek/OpenCode)
 │   ├── main.js               refreshUI, init y observer del DOM
-│   ├── platform.js           Detección de plataforma y selectores (Gemini / ChatGPT)
-│   ├── i18n.js               Textos es/en
-│   ├── storage.js            Lectura, validación y guardado en localStorage
+│   ├── platform.js           Detección de plataforma y selectores universales (5 IAs)
+│   ├── i18n.js               Textos bilingües (es/en) y plantillas por defecto
+│   ├── storage.js            Persistencia híbrida localStorage + chrome.storage.sync
 │   ├── state.js              Estado compartido (único objeto mutable)
+│   ├── prompts.js            Bóveda de Prompts rápidos e inyección en el chat
 │   ├── sidebar.js            Detección de filas/ids/títulos en la barra lateral
 │   ├── folders.js            Auto-clasificación, insignias, filtros y orden
-│   ├── panel.js              Panel flotante de carpetas (arrastre, pills)
+│   ├── panel.js              Panel flotante de carpetas, atajos y oyentes globales
 │   ├── toolbar.js            Barra superior (contraíble)
 │   ├── selection.js          Checkboxes, selección por rango, mover a carpeta, proteger
 │   ├── dialogs.js            Modales y avisos (toast)
@@ -27,13 +35,14 @@
 │   ├── markdown-export.js    Exportar a Markdown
 │   ├── autoscroll.js         Carga automática del historial
 │   └── utils.js              Utilidades de DOM (clic real, polling)
-├── tests/                    Pruebas (node:test + jsdom)
+├── tests/                    23 pruebas automatizadas (node:test + jsdom)
 ├── scripts/build.mjs         Empaquetado con esbuild
-└── extension/                ← la extensión (carpeta a cargar en Chrome)
+└── extension/                ← la extensión lista para cargar en Chrome
     ├── manifest.json
     ├── content.js            GENERADO desde src/ (no editar a mano)
     ├── styles.css
-    ├── icons/  _locales/
+    ├── popup.html / popup.css / popup.js
+    └── icons/  _locales/
 ```
 
 ## Desarrollo
@@ -42,18 +51,7 @@
 npm install
 npm run build    # genera content.js dentro de extension/
 npm run watch    # recompila al guardar
-npm run lint     # ESLint
-npm test         # pruebas unitarias y de integración (jsdom)
+npm run lint     # ESLint (0 errores)
+npm test         # 23 pruebas unitarias y de integración (jsdom)
 npm run check    # lint + tests + build
 ```
-
-Para probar: `chrome://extensions` → activar *Modo desarrollador* → *Cargar descomprimida* → elegir la carpeta `extension/`.
-
-Para publicar: comprimir **el contenido** de la carpeta `extension/` (donde está `manifest.json`).
-
-## Convenciones
-
-- La versión vive solo en `manifest.json` (`APP_VERSION` se lee de ahí). En cada cambio: subir la versión y renombrar las dos carpetas con el número nuevo.
-- Todo lo que cambia en tiempo de ejecución va en el objeto `state` de `src/state.js`.
-- Los selectores del DOM de cada sitio están únicamente en `src/platform.js`: si Gemini o ChatGPT cambian su HTML, es el primer lugar a revisar.
-

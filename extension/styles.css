@@ -619,11 +619,15 @@
   transition: background 0.18s ease !important;
 }
 
-.gcm-chat-row a[href*="/c/"] {
+.gcm-chat-row a[href*="/c/"],
+.gcm-chat-row a[href*="/chat/"],
+.gcm-chat-row a[href*="/session/"] {
   padding-left: 6px !important;
 }
 
-a.gcm-chat-row[href*="/c/"] {
+a.gcm-chat-row[href*="/c/"],
+a.gcm-chat-row[href*="/chat/"],
+a.gcm-chat-row[href*="/session/"] {
   padding-left: 30px !important;
 }
 
@@ -634,6 +638,8 @@ a.gcm-chat-row[href*="/c/"] {
 
 .gcm-chat-row.gcm-has-badge a[href*="/app/"],
 .gcm-chat-row.gcm-has-badge a[href*="/c/"],
+.gcm-chat-row.gcm-has-badge a[href*="/chat/"],
+.gcm-chat-row.gcm-has-badge a[href*="/session/"],
 .gcm-chat-row.gcm-has-badge .conversation-title {
   padding-right: 76px !important;
   box-sizing: border-box !important;
@@ -649,6 +655,8 @@ a.gcm-chat-row[href*="/c/"] {
 
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/app/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/c/"],
+.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/chat/"],
+.gcm-chat-row.gcm-has-badge.gcm-has-lock a[href*="/session/"],
 .gcm-chat-row.gcm-has-badge.gcm-has-lock .conversation-title {
   padding-right: 98px !important;
   box-sizing: border-box !important;
@@ -944,6 +952,115 @@ body.gcm-stealth-delete .fixed.inset-0.bg-black\/60 {
 
 .gcm-btn-cancel:hover {
   background: var(--gcm-neutral-btn-hover) !important;
+}
+
+/* Boveda de Prompts Rapidos */
+.gcm-prompts-modal-card {
+  width: 480px !important;
+  max-height: 85vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.gcm-prompts-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  margin-bottom: 14px !important;
+  padding-right: 4px !important;
+}
+
+.gcm-prompt-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+  background: var(--gcm-modal-input-bg) !important;
+  border: 1px solid var(--gcm-modal-input-border) !important;
+  cursor: pointer !important;
+  transition: border-color 0.16s ease, transform 0.16s ease !important;
+}
+
+.gcm-prompt-item:hover {
+  border-color: #8ab4f8 !important;
+  transform: translateY(-1px) !important;
+}
+
+.gcm-prompt-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.gcm-prompt-item-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--gcm-text-primary) !important;
+  margin-bottom: 3px !important;
+}
+
+.gcm-prompt-item-preview {
+  font-size: 11.5px !important;
+  color: var(--gcm-modal-desc) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.gcm-prompt-item-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+.gcm-prompt-use-btn {
+  padding: 5px 10px !important;
+  font-size: 11.5px !important;
+}
+
+.gcm-prompt-del-btn {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--gcm-modal-desc) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.gcm-prompt-del-btn:hover {
+  color: #f28b82 !important;
+  background: rgba(242, 139, 130, 0.14) !important;
+}
+
+.gcm-prompt-form {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 14px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid var(--gcm-popover-divider) !important;
+}
+
+.gcm-modal-textarea {
+  resize: vertical !important;
+  min-height: 62px !important;
+  font-family: inherit !important;
+}
+
+.gcm-add-prompt-submit {
+  align-self: flex-end !important;
+  background: linear-gradient(135deg, #4285f4, #1a73e8) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 

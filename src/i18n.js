@@ -74,6 +74,34 @@ export const I18N = {
     mdFolderLabel: 'Carpeta',
     mdActiveChatHeader: 'Contenido de la Conversación Activa en Pantalla',
     mdUser: '🧑 Usuario',
+    promptsBtn: '⚡ Prompts',
+    promptsBtnTitle: 'Abrir tu bóveda de Prompts rápidos reutilizables',
+    modalPromptsTitle: '⚡ Bóveda de Prompts Rápidos',
+    modalPromptsDesc: 'Haz clic en un prompt para insertarlo directamente en el chat activo, o crea uno nuevo:',
+    promptTitlePlaceholder: 'Título corto (Ej. Revisor Senior de Código)',
+    promptBodyPlaceholder: 'Escribe las instrucciones completas del prompt...',
+    addPromptBtn: '➕ Guardar Prompt',
+    insertPromptBtn: 'Insertar',
+    deletePromptTitle: 'Eliminar prompt',
+    toastPromptInserted: '⚡ Prompt insertado en el chat.',
+    toastPromptCopied: '📋 Prompt copiado al portapapeles.',
+    defaultPrompts: [
+      {
+        id: 'p_code',
+        title: '💻 Revisor de Código Senior',
+        content: 'Actúa como un Ingeniero de Software Senior. Revisa el siguiente código buscando errores potenciales, problemas de rendimiento y vulnerabilidades, y propón una versión optimizada y limpia:\n\n'
+      },
+      {
+        id: 'p_summary',
+        title: '📝 Resumen Ejecutivo',
+        content: 'Resume el siguiente texto en 5 puntos clave accionables, destacando las conclusiones más importantes con claridad y concisión:\n\n'
+      },
+      {
+        id: 'p_translate',
+        title: '🌐 Traductor Técnico Natural',
+        content: 'Traduce el siguiente texto al inglés/español manteniendo un tono profesional, natural y conservando intacta la terminología técnica:\n\n'
+      }
+    ],
     defaultFolders: [
       { id: 'f_work', name: 'Programación', color: '#4285f4', keywords: ['python', 'javascript', 'código', 'code', 'script', 'sql', 'api', 'bug', 'error', 'html', 'css', 'react'] },
       { id: 'f_study', name: 'Estudio', color: '#34a853', keywords: ['resumen', 'summary', 'explica', 'explain', 'examen', 'curso', 'historia', 'matemática', 'aprender'] },
@@ -152,6 +180,34 @@ export const I18N = {
     mdFolderLabel: 'Folder',
     mdActiveChatHeader: 'Active Conversation Content on Screen',
     mdUser: '🧑 User',
+    promptsBtn: '⚡ Prompts',
+    promptsBtnTitle: 'Open your reusable Quick Prompt Vault',
+    modalPromptsTitle: '⚡ Quick Prompt Vault',
+    modalPromptsDesc: 'Click any prompt to insert it directly into the active chat, or save a new template:',
+    promptTitlePlaceholder: 'Short title (e.g., Senior Code Reviewer)',
+    promptBodyPlaceholder: 'Write the full prompt instructions...',
+    addPromptBtn: '➕ Save Prompt',
+    insertPromptBtn: 'Insert',
+    deletePromptTitle: 'Delete prompt',
+    toastPromptInserted: '⚡ Prompt inserted into chat.',
+    toastPromptCopied: '📋 Prompt copied to clipboard.',
+    defaultPrompts: [
+      {
+        id: 'p_code',
+        title: '💻 Senior Code Reviewer',
+        content: 'Act as a Senior Software Engineer. Review the following code for potential bugs, performance issues, and security vulnerabilities, and propose a clean, optimized version:\n\n'
+      },
+      {
+        id: 'p_summary',
+        title: '📝 Executive Summary',
+        content: 'Summarize the following text into 5 actionable key bullet points, highlighting the most important takeaways clearly and concisely:\n\n'
+      },
+      {
+        id: 'p_translate',
+        title: '🌐 Technical Translator',
+        content: 'Translate the following text into natural, professional English/Spanish while keeping technical terminology intact:\n\n'
+      }
+    ],
     defaultFolders: [
       { id: 'f_work', name: 'Coding', color: '#4285f4', keywords: ['python', 'javascript', 'code', 'código', 'script', 'sql', 'api', 'bug', 'error', 'html', 'css', 'react'] },
       { id: 'f_study', name: 'Study', color: '#34a853', keywords: ['summary', 'resumen', 'explain', 'explica', 'exam', 'course', 'history', 'math', 'learn'] },

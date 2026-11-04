@@ -54,6 +54,11 @@ export function importBackupConfig() {
                 ? f.keywords.filter((k) => typeof k === 'string').map((k) => k.trim().toLowerCase()).filter(Boolean)
                 : []
             })),
+            prompts: Array.isArray(parsed.prompts)
+              ? parsed.prompts
+                  .filter((p) => p && typeof p.id === 'string' && typeof p.title === 'string' && typeof p.content === 'string')
+                  .map((p) => ({ id: p.id, title: p.title, content: p.content }))
+              : state.folderState.prompts || [],
             assignments: sanitizeMap(parsed.assignments, (v) => (typeof v === 'string' ? v : undefined)),
             protectedIds: sanitizeMap(parsed.protectedIds, (v) => (v ? true : undefined)),
             minimized: !!parsed.minimized,

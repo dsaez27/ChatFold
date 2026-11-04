@@ -1,4 +1,4 @@
-import { P, PLATFORM_KEY, SELECTORS } from './platform.js';
+import { CONV_LINK_SELECTOR, P, PLATFORM_KEY, SELECTORS } from './platform.js';
 import { state } from './state.js';
 
 // Cachés en memoria O(1)
@@ -10,7 +10,7 @@ export function parseConvId(el) {
   if (!el) return null;
   const href =
     el.getAttribute?.('href') ||
-    el.querySelector?.('a[href*="/app/"], a[href*="/c/"]')?.getAttribute('href') ||
+    el.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute('href') ||
     '';
   const cached = rowIdCache.get(el);
   if (cached && cached.href === href) return cached.id;
@@ -47,7 +47,7 @@ function extractConvTitle(row, convId) {
   const linkEl =
     row.querySelector?.('.conversation-title') ||
     row.querySelector?.('[dir="auto"]') ||
-    row.querySelector?.('a[href*="/app/"], a[href*="/c/"]') ||
+    row.querySelector?.(CONV_LINK_SELECTOR) ||
     row;
 
   let rawText = '';
@@ -85,7 +85,7 @@ export function getSidebarElement() {
 
 export function isSingleRowContainer(container) {
   if (!container || container === document.body) return false;
-  const links = container.querySelectorAll('a[href*="/app/"], a[href*="/c/"]');
+  const links = container.querySelectorAll(CONV_LINK_SELECTOR);
   return links.length <= 1;
 }
 
@@ -110,7 +110,7 @@ function findRowContainer(el) {
 
 export function getConversationRows() {
   const sidebar = getSidebarElement();
-  const root = sidebar || (PLATFORM_KEY === 'chatgpt' ? document : null);
+  const root = sidebar || (PLATFORM_KEY !== 'gemini' ? document : null);
   if (!root) return [];
 
   const candidates = root.querySelectorAll(SELECTORS.conversationLinks);
@@ -119,8 +119,8 @@ export function getConversationRows() {
 
   for (let i = 0; i < candidates.length; i++) {
     const el = candidates[i];
-    // En ChatGPT descartar cualquier enlace que esté dentro del área de mensajes principal (<main>)
-    if (PLATFORM_KEY === 'chatgpt' && el.closest('main')) continue;
+    // Descartar cualquier enlace que esté dentro del área de mensajes principal (<main>)
+    if (PLATFORM_KEY !== 'gemini' && el.closest('main')) continue;
 
     const id = parseConvId(el);
     if (!id) continue;

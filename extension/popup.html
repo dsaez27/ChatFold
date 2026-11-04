@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChatFold</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="cf-header">
+      <div class="cf-brand">
+        <img src="icons/icon48.png" alt="ChatFold" class="cf-logo" width="28" height="28" />
+        <div>
+          <div class="cf-title">ChatFold <span id="cf-version" class="cf-version">v3.4.0</span></div>
+          <div class="cf-subtitle" id="cf-sync-badge">☁️ Cloud Sync Activo</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="cf-section">
+      <div class="cf-section-title">Plataformas IA Soportadas</div>
+      <div class="cf-platforms" id="cf-platforms-list"></div>
+    </section>
+
+    <section class="cf-section" id="cf-active-actions">
+      <div class="cf-section-title">Acciones en Pestaña Activa</div>
+      <div class="cf-actions-row">
+        <button id="cf-btn-toggle" class="cf-btn">🗔 Mostrar/Ocultar</button>
+        <button id="cf-btn-prompts" class="cf-btn cf-btn-primary">⚡ Prompts</button>
+        <button id="cf-btn-backup" class="cf-btn">💾 Respaldo</button>
+      </div>
+    </section>
+
+    <footer class="cf-footer">
+      <span>Atajos: <kbd>Alt+Shift+F</kbd> Panel · <kbd>Alt+Shift+S</kbd> Buscar</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

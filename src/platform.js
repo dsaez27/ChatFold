@@ -9,14 +9,27 @@ export function detectPlatform() {
   if (host.endsWith('gemini.google.com')) {
     return 'gemini';
   }
+  if (host.endsWith('claude.ai')) {
+    return 'claude';
+  }
+  if (host.endsWith('deepseek.com')) {
+    return 'deepseek';
+  }
+  if (host.endsWith('opencode.ai')) {
+    return 'opencode';
+  }
   return null;
 }
 
-/** 'gemini' | 'chatgpt' | null (null si la página no es una de las plataformas soportadas). */
+/** 'gemini' | 'chatgpt' | 'claude' | 'deepseek' | 'opencode' | null */
 export const PLATFORM_KEY = detectPlatform();
 
-// Configuración específica por plataforma (Gemini y ChatGPT)
-const PLATFORMS = {
+/** Selector universal de enlaces a conversaciones en todas las plataformas soportadas. */
+export const CONV_LINK_SELECTOR =
+  'a[href*="/app/"], a[href*="/c/"], a[href*="/chat/"], a[href*="/session/"]';
+
+// Configuración específica por plataforma (Gemini, ChatGPT, Claude, DeepSeek y OpenCode)
+export const PLATFORMS = {
   gemini: {
     name: 'Gemini',
     storageKey: 'gcm_folders_data_v2',
@@ -32,7 +45,8 @@ const PLATFORMS = {
       deleteMenuItem: 'button[data-test-id="delete-button"], [role="menuitem"]:has(mat-icon[fonticon="delete"]), [role="menuitem"]:has(mat-icon[data-mat-icon-name="delete"]), [role="menuitem"]',
       confirmDialog: '[role="dialog"], mat-dialog-container, .mat-mdc-dialog-surface',
       confirmButton: 'gem-button[cdkfocusinitial] button, [cdkfocusinitial] button, button[cdkfocusinitial], button[data-test-id="confirm-button"]',
-      activeMessages: 'user-query, model-response, .query-text, .model-response-text, message-content'
+      activeMessages: 'user-query, model-response, .query-text, .model-response-text, message-content',
+      promptInput: 'rich-textarea div[contenteditable="true"], div.ql-editor[contenteditable="true"], div[contenteditable="true"], textarea'
     }
   },
   chatgpt: {
@@ -60,7 +74,69 @@ const PLATFORMS = {
       confirmDialog: '[role="dialog"], [data-testid="modal-delete-conversation-confirmation"]',
       confirmButton:
         'button[data-testid="delete-conversation-confirm-button"], button.btn-danger, button[class*="btn-danger"], button[class*="bg-red"], button[class*="bg-token-bg-danger"], button[type="submit"]',
-      activeMessages: '[data-message-author-role="user"], [data-message-author-role="assistant"]'
+      activeMessages: '[data-message-author-role="user"], [data-message-author-role="assistant"]',
+      promptInput: '#prompt-textarea, div[contenteditable="true"]#prompt-textarea, textarea[data-id], textarea, div[contenteditable="true"]'
+    }
+  },
+  claude: {
+    name: 'Claude',
+    storageKey: 'gcm_claude_folders_data_v1',
+    legacyStorageKey: null,
+    convHrefRegex: /\/chat\/([0-9a-zA-Z_-]{4,})/,
+    buildUrl: (id) => `https://claude.ai/chat/${id}`,
+    selectors: {
+      sidebar: 'nav[aria-label], nav, aside, [data-testid*="sidebar"]',
+      conversationLinks: 'nav a[href*="/chat/"], aside a[href*="/chat/"], a[href*="/chat/"]',
+      rowClosest: ['li', '[data-testid*="chat-item"]', 'div.group', 'a[href*="/chat/"]'],
+      optionsTrigger:
+        'button[aria-haspopup="menu"], button[data-testid*="menu"], button[data-testid*="options"], button[aria-label*="More"], button[aria-label*="Más"], button[aria-label*="Options"]',
+      menuPanel: '[role="menu"], [data-radix-menu-content]',
+      deleteMenuItem:
+        '[role="menuitem"][class*="danger"], [role="menuitem"][class*="red"], [role="menuitem"][class*="error"], [role="menuitem"]',
+      confirmDialog: '[role="dialog"], [role="alertdialog"]',
+      confirmButton:
+        'button[data-testid*="delete"], button[class*="danger"], button[class*="red"], button[type="submit"]',
+      activeMessages: '[data-testid*="user-message"], .font-claude-message, [data-is-streaming], [data-message-author-role]',
+      promptInput: 'div.ProseMirror[contenteditable="true"], fieldset div[contenteditable="true"], div[contenteditable="true"], textarea'
+    }
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    storageKey: 'gcm_deepseek_folders_data_v1',
+    legacyStorageKey: null,
+    convHrefRegex: /\/(?:a\/chat\/s|chat)\/([0-9a-zA-Z_-]{4,})/,
+    buildUrl: (id) => `https://chat.deepseek.com/a/chat/s/${id}`,
+    selectors: {
+      sidebar: 'nav, aside, [class*="sidebar"], .ds-scroll-area',
+      conversationLinks: 'a[href*="/chat/"], [data-chat-id] a',
+      rowClosest: ['li', '[data-chat-id]', 'div[class*="chat-item"]', 'a[href*="/chat/"]'],
+      optionsTrigger:
+        'button[aria-haspopup="menu"], [role="button"][aria-haspopup="menu"], button[aria-label*="More"], button[aria-label*="options"], button[aria-label*="Opciones"]',
+      menuPanel: '[role="menu"], .ds-dropdown-menu',
+      deleteMenuItem: '[role="menuitem"], .ds-dropdown-menu-item',
+      confirmDialog: '[role="dialog"], .ds-modal-content',
+      confirmButton: 'button.ds-button--error, button[class*="danger"], button[class*="error"], button[type="submit"]',
+      activeMessages: '.ds-markdown, [class*="message-content"], [data-message-author-role]',
+      promptInput: 'textarea#chat-input, textarea, div[contenteditable="true"]'
+    }
+  },
+  opencode: {
+    name: 'OpenCode',
+    storageKey: 'gcm_opencode_folders_data_v1',
+    legacyStorageKey: null,
+    convHrefRegex: /\/(?:chat|session|c)\/([0-9a-zA-Z_-]{4,})/,
+    buildUrl: (id) => `https://opencode.ai/chat/${id}`,
+    selectors: {
+      sidebar: 'nav, aside, [data-sidebar], [class*="sidebar"]',
+      conversationLinks: 'a[href*="/chat/"], a[href*="/session/"], a[href*="/c/"]',
+      rowClosest: ['li', '[data-session-id]', 'div.group', 'a[href*="/chat/"]', 'a[href*="/session/"]'],
+      optionsTrigger: 'button[aria-haspopup="menu"], button[aria-label*="options"], button[aria-label*="More"]',
+      menuPanel: '[role="menu"], [data-radix-menu-content]',
+      deleteMenuItem: '[role="menuitem"]',
+      confirmDialog: '[role="dialog"], [role="alertdialog"]',
+      confirmButton: 'button[class*="danger"], button[class*="red"], button[type="submit"]',
+      activeMessages: '[data-message-author-role], .message-content, [class*="message"]',
+      promptInput: 'textarea, div[contenteditable="true"]'
     }
   }
 };

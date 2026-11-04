@@ -10,9 +10,19 @@
     if (host.endsWith("gemini.google.com")) {
       return "gemini";
     }
+    if (host.endsWith("claude.ai")) {
+      return "claude";
+    }
+    if (host.endsWith("deepseek.com")) {
+      return "deepseek";
+    }
+    if (host.endsWith("opencode.ai")) {
+      return "opencode";
+    }
     return null;
   }
   var PLATFORM_KEY = detectPlatform();
+  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/chat/"], a[href*="/session/"]';
   var PLATFORMS = {
     gemini: {
       name: "Gemini",
@@ -29,7 +39,8 @@
         deleteMenuItem: 'button[data-test-id="delete-button"], [role="menuitem"]:has(mat-icon[fonticon="delete"]), [role="menuitem"]:has(mat-icon[data-mat-icon-name="delete"]), [role="menuitem"]',
         confirmDialog: '[role="dialog"], mat-dialog-container, .mat-mdc-dialog-surface',
         confirmButton: 'gem-button[cdkfocusinitial] button, [cdkfocusinitial] button, button[cdkfocusinitial], button[data-test-id="confirm-button"]',
-        activeMessages: "user-query, model-response, .query-text, .model-response-text, message-content"
+        activeMessages: "user-query, model-response, .query-text, .model-response-text, message-content",
+        promptInput: 'rich-textarea div[contenteditable="true"], div.ql-editor[contenteditable="true"], div[contenteditable="true"], textarea'
       }
     },
     chatgpt: {
@@ -53,7 +64,65 @@
         deleteMenuItem: '[role="menuitem"][data-testid="delete-chat-menu-item"], [role="menuitem"][data-testid*="delete"], [role="menuitem"].text-danger, [role="menuitem"][class*="text-token-text-error"], [role="menuitem"][class*="text-red"], [role="menuitem"]',
         confirmDialog: '[role="dialog"], [data-testid="modal-delete-conversation-confirmation"]',
         confirmButton: 'button[data-testid="delete-conversation-confirm-button"], button.btn-danger, button[class*="btn-danger"], button[class*="bg-red"], button[class*="bg-token-bg-danger"], button[type="submit"]',
-        activeMessages: '[data-message-author-role="user"], [data-message-author-role="assistant"]'
+        activeMessages: '[data-message-author-role="user"], [data-message-author-role="assistant"]',
+        promptInput: '#prompt-textarea, div[contenteditable="true"]#prompt-textarea, textarea[data-id], textarea, div[contenteditable="true"]'
+      }
+    },
+    claude: {
+      name: "Claude",
+      storageKey: "gcm_claude_folders_data_v1",
+      legacyStorageKey: null,
+      convHrefRegex: /\/chat\/([0-9a-zA-Z_-]{4,})/,
+      buildUrl: (id) => `https://claude.ai/chat/${id}`,
+      selectors: {
+        sidebar: 'nav[aria-label], nav, aside, [data-testid*="sidebar"]',
+        conversationLinks: 'nav a[href*="/chat/"], aside a[href*="/chat/"], a[href*="/chat/"]',
+        rowClosest: ["li", '[data-testid*="chat-item"]', "div.group", 'a[href*="/chat/"]'],
+        optionsTrigger: 'button[aria-haspopup="menu"], button[data-testid*="menu"], button[data-testid*="options"], button[aria-label*="More"], button[aria-label*="Más"], button[aria-label*="Options"]',
+        menuPanel: '[role="menu"], [data-radix-menu-content]',
+        deleteMenuItem: '[role="menuitem"][class*="danger"], [role="menuitem"][class*="red"], [role="menuitem"][class*="error"], [role="menuitem"]',
+        confirmDialog: '[role="dialog"], [role="alertdialog"]',
+        confirmButton: 'button[data-testid*="delete"], button[class*="danger"], button[class*="red"], button[type="submit"]',
+        activeMessages: '[data-testid*="user-message"], .font-claude-message, [data-is-streaming], [data-message-author-role]',
+        promptInput: 'div.ProseMirror[contenteditable="true"], fieldset div[contenteditable="true"], div[contenteditable="true"], textarea'
+      }
+    },
+    deepseek: {
+      name: "DeepSeek",
+      storageKey: "gcm_deepseek_folders_data_v1",
+      legacyStorageKey: null,
+      convHrefRegex: /\/(?:a\/chat\/s|chat)\/([0-9a-zA-Z_-]{4,})/,
+      buildUrl: (id) => `https://chat.deepseek.com/a/chat/s/${id}`,
+      selectors: {
+        sidebar: 'nav, aside, [class*="sidebar"], .ds-scroll-area',
+        conversationLinks: 'a[href*="/chat/"], [data-chat-id] a',
+        rowClosest: ["li", "[data-chat-id]", 'div[class*="chat-item"]', 'a[href*="/chat/"]'],
+        optionsTrigger: 'button[aria-haspopup="menu"], [role="button"][aria-haspopup="menu"], button[aria-label*="More"], button[aria-label*="options"], button[aria-label*="Opciones"]',
+        menuPanel: '[role="menu"], .ds-dropdown-menu',
+        deleteMenuItem: '[role="menuitem"], .ds-dropdown-menu-item',
+        confirmDialog: '[role="dialog"], .ds-modal-content',
+        confirmButton: 'button.ds-button--error, button[class*="danger"], button[class*="error"], button[type="submit"]',
+        activeMessages: '.ds-markdown, [class*="message-content"], [data-message-author-role]',
+        promptInput: 'textarea#chat-input, textarea, div[contenteditable="true"]'
+      }
+    },
+    opencode: {
+      name: "OpenCode",
+      storageKey: "gcm_opencode_folders_data_v1",
+      legacyStorageKey: null,
+      convHrefRegex: /\/(?:chat|session|c)\/([0-9a-zA-Z_-]{4,})/,
+      buildUrl: (id) => `https://opencode.ai/chat/${id}`,
+      selectors: {
+        sidebar: 'nav, aside, [data-sidebar], [class*="sidebar"]',
+        conversationLinks: 'a[href*="/chat/"], a[href*="/session/"], a[href*="/c/"]',
+        rowClosest: ["li", "[data-session-id]", "div.group", 'a[href*="/chat/"]', 'a[href*="/session/"]'],
+        optionsTrigger: 'button[aria-haspopup="menu"], button[aria-label*="options"], button[aria-label*="More"]',
+        menuPanel: '[role="menu"], [data-radix-menu-content]',
+        deleteMenuItem: '[role="menuitem"]',
+        confirmDialog: '[role="dialog"], [role="alertdialog"]',
+        confirmButton: 'button[class*="danger"], button[class*="red"], button[type="submit"]',
+        activeMessages: '[data-message-author-role], .message-content, [class*="message"]',
+        promptInput: 'textarea, div[contenteditable="true"]'
       }
     }
   };
@@ -134,6 +203,34 @@
       mdFolderLabel: "Carpeta",
       mdActiveChatHeader: "Contenido de la Conversación Activa en Pantalla",
       mdUser: "🧑 Usuario",
+      promptsBtn: "⚡ Prompts",
+      promptsBtnTitle: "Abrir tu bóveda de Prompts rápidos reutilizables",
+      modalPromptsTitle: "⚡ Bóveda de Prompts Rápidos",
+      modalPromptsDesc: "Haz clic en un prompt para insertarlo directamente en el chat activo, o crea uno nuevo:",
+      promptTitlePlaceholder: "Título corto (Ej. Revisor Senior de Código)",
+      promptBodyPlaceholder: "Escribe las instrucciones completas del prompt...",
+      addPromptBtn: "➕ Guardar Prompt",
+      insertPromptBtn: "Insertar",
+      deletePromptTitle: "Eliminar prompt",
+      toastPromptInserted: "⚡ Prompt insertado en el chat.",
+      toastPromptCopied: "📋 Prompt copiado al portapapeles.",
+      defaultPrompts: [
+        {
+          id: "p_code",
+          title: "💻 Revisor de Código Senior",
+          content: "Actúa como un Ingeniero de Software Senior. Revisa el siguiente código buscando errores potenciales, problemas de rendimiento y vulnerabilidades, y propón una versión optimizada y limpia:\n\n"
+        },
+        {
+          id: "p_summary",
+          title: "📝 Resumen Ejecutivo",
+          content: "Resume el siguiente texto en 5 puntos clave accionables, destacando las conclusiones más importantes con claridad y concisión:\n\n"
+        },
+        {
+          id: "p_translate",
+          title: "🌐 Traductor Técnico Natural",
+          content: "Traduce el siguiente texto al inglés/español manteniendo un tono profesional, natural y conservando intacta la terminología técnica:\n\n"
+        }
+      ],
       defaultFolders: [
         { id: "f_work", name: "Programación", color: "#4285f4", keywords: ["python", "javascript", "código", "code", "script", "sql", "api", "bug", "error", "html", "css", "react"] },
         { id: "f_study", name: "Estudio", color: "#34a853", keywords: ["resumen", "summary", "explica", "explain", "examen", "curso", "historia", "matemática", "aprender"] },
@@ -211,6 +308,34 @@
       mdFolderLabel: "Folder",
       mdActiveChatHeader: "Active Conversation Content on Screen",
       mdUser: "🧑 User",
+      promptsBtn: "⚡ Prompts",
+      promptsBtnTitle: "Open your reusable Quick Prompt Vault",
+      modalPromptsTitle: "⚡ Quick Prompt Vault",
+      modalPromptsDesc: "Click any prompt to insert it directly into the active chat, or save a new template:",
+      promptTitlePlaceholder: "Short title (e.g., Senior Code Reviewer)",
+      promptBodyPlaceholder: "Write the full prompt instructions...",
+      addPromptBtn: "➕ Save Prompt",
+      insertPromptBtn: "Insert",
+      deletePromptTitle: "Delete prompt",
+      toastPromptInserted: "⚡ Prompt inserted into chat.",
+      toastPromptCopied: "📋 Prompt copied to clipboard.",
+      defaultPrompts: [
+        {
+          id: "p_code",
+          title: "💻 Senior Code Reviewer",
+          content: "Act as a Senior Software Engineer. Review the following code for potential bugs, performance issues, and security vulnerabilities, and propose a clean, optimized version:\n\n"
+        },
+        {
+          id: "p_summary",
+          title: "📝 Executive Summary",
+          content: "Summarize the following text into 5 actionable key bullet points, highlighting the most important takeaways clearly and concisely:\n\n"
+        },
+        {
+          id: "p_translate",
+          title: "🌐 Technical Translator",
+          content: "Translate the following text into natural, professional English/Spanish while keeping technical terminology intact:\n\n"
+        }
+      ],
       defaultFolders: [
         { id: "f_work", name: "Coding", color: "#4285f4", keywords: ["python", "javascript", "code", "código", "script", "sql", "api", "bug", "error", "html", "css", "react"] },
         { id: "f_study", name: "Study", color: "#34a853", keywords: ["summary", "resumen", "explain", "explica", "exam", "course", "history", "math", "learn"] },
@@ -226,14 +351,21 @@
   // src/storage.js
   function normalizeStoredState(parsed, defaultLang) {
     const isPlainObj = (o) => o && typeof o === "object" && !Array.isArray(o);
+    const lang = parsed.lang === "en" || parsed.lang === "es" ? parsed.lang : defaultLang;
+    const fallbackPrompts = (I18N[lang]?.defaultPrompts || I18N.es.defaultPrompts).map((p) => ({ ...p }));
     return {
-      lang: parsed.lang === "en" || parsed.lang === "es" ? parsed.lang : defaultLang,
+      lang,
       folders: Array.isArray(parsed.folders) ? parsed.folders.filter((f) => f && typeof f.id === "string" && typeof f.name === "string").map((f) => ({
         id: f.id,
         name: f.name,
         color: f.color || "#4285f4",
         keywords: Array.isArray(f.keywords) ? f.keywords.filter((k) => typeof k === "string").map((k) => k.toLowerCase()) : []
       })) : [],
+      prompts: Array.isArray(parsed.prompts) ? parsed.prompts.filter((p) => p && typeof p.id === "string" && typeof p.title === "string" && typeof p.content === "string").map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content
+      })) : fallbackPrompts,
       assignments: isPlainObj(parsed.assignments) ? parsed.assignments : {},
       protectedIds: isPlainObj(parsed.protectedIds) ? parsed.protectedIds : {},
       minimized: !!parsed.minimized,
@@ -258,6 +390,7 @@
     const initial = {
       lang: defaultLang,
       folders: I18N[defaultLang].defaultFolders.map((f) => ({ ...f, keywords: [...f.keywords] })),
+      prompts: I18N[defaultLang].defaultPrompts.map((p) => ({ ...p })),
       assignments: {},
       protectedIds: {},
       minimized: false,
@@ -270,6 +403,52 @@
   function saveFolderData(data) {
     try {
       localStorage.setItem(P.storageKey, JSON.stringify(data));
+    } catch (_) {
+    }
+    try {
+      if (typeof chrome !== "undefined" && chrome.storage?.sync?.set) {
+        const { pos: _pos, view: _view, ...syncPayload } = data;
+        chrome.storage.sync.set({ [P.storageKey]: syncPayload });
+      }
+    } catch (_) {
+    }
+  }
+  function initCloudSync(getState, applyIncoming) {
+    try {
+      if (typeof chrome === "undefined" || !chrome.storage?.sync?.get) return;
+      chrome.storage.sync.get([P.storageKey], (res) => {
+        try {
+          const cloudData = res?.[P.storageKey];
+          const current = getState();
+          if (cloudData && typeof cloudData === "object") {
+            const merged = normalizeStoredState(
+              { ...cloudData, pos: current.pos, view: current.view },
+              current.lang
+            );
+            localStorage.setItem(P.storageKey, JSON.stringify(merged));
+            applyIncoming(merged);
+          } else {
+            const { pos: _pos, view: _view, ...syncPayload } = current;
+            chrome.storage.sync.set({ [P.storageKey]: syncPayload });
+          }
+        } catch (_) {
+        }
+      });
+      if (chrome.storage.onChanged?.addListener) {
+        chrome.storage.onChanged.addListener((changes, area) => {
+          if (area !== "sync" || !changes[P.storageKey]?.newValue) return;
+          try {
+            const current = getState();
+            const merged = normalizeStoredState(
+              { ...changes[P.storageKey].newValue, pos: current.pos, view: current.view },
+              current.lang
+            );
+            localStorage.setItem(P.storageKey, JSON.stringify(merged));
+            applyIncoming(merged);
+          } catch (_) {
+          }
+        });
+      }
     } catch (_) {
     }
   }
@@ -314,7 +493,7 @@
   var rowTitleCache = /* @__PURE__ */ new WeakMap();
   function parseConvId(el) {
     if (!el) return null;
-    const href = el.getAttribute?.("href") || el.querySelector?.('a[href*="/app/"], a[href*="/c/"]')?.getAttribute("href") || "";
+    const href = el.getAttribute?.("href") || el.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute("href") || "";
     const cached = rowIdCache.get(el);
     if (cached && cached.href === href) return cached.id;
     if (href) {
@@ -345,7 +524,7 @@
   function extractConvTitle(row, convId) {
     const cached = rowTitleCache.get(row);
     if (cached && cached.id === convId) return cached.title;
-    const linkEl = row.querySelector?.(".conversation-title") || row.querySelector?.('[dir="auto"]') || row.querySelector?.('a[href*="/app/"], a[href*="/c/"]') || row;
+    const linkEl = row.querySelector?.(".conversation-title") || row.querySelector?.('[dir="auto"]') || row.querySelector?.(CONV_LINK_SELECTOR) || row;
     let rawText = "";
     if (linkEl.querySelector?.(".gcm-chat-badge, .gcm-lock-icon, button")) {
       const clone = linkEl.cloneNode(true);
@@ -374,7 +553,7 @@
   }
   function isSingleRowContainer(container) {
     if (!container || container === document.body) return false;
-    const links = container.querySelectorAll('a[href*="/app/"], a[href*="/c/"]');
+    const links = container.querySelectorAll(CONV_LINK_SELECTOR);
     return links.length <= 1;
   }
   function findRowContainer(el) {
@@ -397,14 +576,14 @@
   }
   function getConversationRows() {
     const sidebar = getSidebarElement();
-    const root = sidebar || (PLATFORM_KEY === "chatgpt" ? document : null);
+    const root = sidebar || (PLATFORM_KEY !== "gemini" ? document : null);
     if (!root) return [];
     const candidates = root.querySelectorAll(SELECTORS.conversationLinks);
     const rows = [];
     const seenRows = /* @__PURE__ */ new Set();
     for (let i = 0; i < candidates.length; i++) {
       const el = candidates[i];
-      if (PLATFORM_KEY === "chatgpt" && el.closest("main")) continue;
+      if (PLATFORM_KEY !== "gemini" && el.closest("main")) continue;
       const id = parseConvId(el);
       if (!id) continue;
       const row = findRowContainer(el);
@@ -900,6 +1079,7 @@
                 color: /^#[0-9a-fA-F]{6}$/.test(f?.color) ? f.color : PRESET_COLORS[idx % PRESET_COLORS.length],
                 keywords: Array.isArray(f?.keywords) ? f.keywords.filter((k) => typeof k === "string").map((k) => k.trim().toLowerCase()).filter(Boolean) : []
               })),
+              prompts: Array.isArray(parsed.prompts) ? parsed.prompts.filter((p) => p && typeof p.id === "string" && typeof p.title === "string" && typeof p.content === "string").map((p) => ({ id: p.id, title: p.title, content: p.content })) : state.folderState.prompts || [],
               assignments: sanitizeMap(parsed.assignments, (v) => typeof v === "string" ? v : void 0),
               protectedIds: sanitizeMap(parsed.protectedIds, (v) => v ? true : void 0),
               minimized: !!parsed.minimized,
@@ -923,6 +1103,158 @@
       reader.readAsText(file);
     });
     input.click();
+  }
+
+  // src/prompts.js
+  function insertPromptIntoChat(text) {
+    const input = document.querySelector(SELECTORS.promptInput);
+    if (!input) {
+      try {
+        navigator.clipboard?.writeText(text);
+      } catch (_) {
+      }
+      updateStatusToast(t().toastPromptCopied, null, null, 2800);
+      return false;
+    }
+    input.focus();
+    if (input.tagName === "TEXTAREA" || input.tagName === "INPUT") {
+      const existing = input.value ? `${input.value}
+` : "";
+      const nextValue = existing + text;
+      const proto = input.tagName === "TEXTAREA" ? window.HTMLTextAreaElement?.prototype : window.HTMLInputElement?.prototype;
+      const nativeSetter = proto ? Object.getOwnPropertyDescriptor(proto, "value")?.set : null;
+      if (nativeSetter) {
+        nativeSetter.call(input, nextValue);
+      } else {
+        input.value = nextValue;
+      }
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    } else {
+      const currentText = (input.textContent || "").trim();
+      const nextText = currentText ? `${currentText}
+${text}` : text;
+      input.textContent = nextText;
+      input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+    }
+    updateStatusToast(t().toastPromptInserted, null, null, 2500);
+    return true;
+  }
+  function openPromptsModal() {
+    const existing = document.getElementById("gcm-modal-overlay");
+    if (existing) existing.remove();
+    if (!Array.isArray(state.folderState.prompts)) {
+      state.folderState.prompts = t().defaultPrompts.map((p) => ({ ...p }));
+    }
+    const overlay = document.createElement("div");
+    overlay.id = "gcm-modal-overlay";
+    const card = document.createElement("div");
+    card.className = "gcm-modal-card gcm-prompts-modal-card";
+    const title = document.createElement("div");
+    title.className = "gcm-modal-title";
+    title.textContent = t().modalPromptsTitle;
+    const desc = document.createElement("div");
+    desc.className = "gcm-modal-desc";
+    desc.textContent = t().modalPromptsDesc;
+    const listContainer = document.createElement("div");
+    listContainer.className = "gcm-prompts-list";
+    const renderPromptsList = () => {
+      listContainer.textContent = "";
+      state.folderState.prompts.forEach((p) => {
+        const item = document.createElement("div");
+        item.className = "gcm-prompt-item";
+        const info = document.createElement("div");
+        info.className = "gcm-prompt-info";
+        const itemTitle = document.createElement("div");
+        itemTitle.className = "gcm-prompt-item-title";
+        itemTitle.textContent = p.title;
+        const itemPreview = document.createElement("div");
+        itemPreview.className = "gcm-prompt-item-preview";
+        itemPreview.textContent = p.content.trim().slice(0, 110) + (p.content.length > 110 ? "…" : "");
+        info.appendChild(itemTitle);
+        info.appendChild(itemPreview);
+        const itemActions = document.createElement("div");
+        itemActions.className = "gcm-prompt-item-actions";
+        const useBtn = document.createElement("button");
+        useBtn.className = "gcm-btn gcm-btn-stop gcm-prompt-use-btn";
+        useBtn.textContent = t().insertPromptBtn;
+        useBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          overlay.remove();
+          insertPromptIntoChat(p.content);
+        });
+        const delBtn = document.createElement("button");
+        delBtn.className = "gcm-prompt-del-btn";
+        delBtn.textContent = "×";
+        delBtn.title = t().deletePromptTitle;
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          state.folderState.prompts = state.folderState.prompts.filter((itemPrompt) => itemPrompt.id !== p.id);
+          saveFolderData(state.folderState);
+          renderPromptsList();
+        });
+        itemActions.appendChild(useBtn);
+        itemActions.appendChild(delBtn);
+        item.addEventListener("click", () => {
+          overlay.remove();
+          insertPromptIntoChat(p.content);
+        });
+        item.appendChild(info);
+        item.appendChild(itemActions);
+        listContainer.appendChild(item);
+      });
+    };
+    renderPromptsList();
+    const formBox = document.createElement("div");
+    formBox.className = "gcm-prompt-form";
+    const inputTitle = document.createElement("input");
+    inputTitle.type = "text";
+    inputTitle.className = "gcm-modal-input";
+    inputTitle.placeholder = t().promptTitlePlaceholder;
+    const inputBody = document.createElement("textarea");
+    inputBody.className = "gcm-modal-input gcm-modal-textarea";
+    inputBody.placeholder = t().promptBodyPlaceholder;
+    inputBody.rows = 3;
+    const addPromptBtn = document.createElement("button");
+    addPromptBtn.className = "gcm-btn gcm-btn-Folder gcm-add-prompt-submit";
+    addPromptBtn.textContent = t().addPromptBtn;
+    addPromptBtn.addEventListener("click", () => {
+      const newTitle = inputTitle.value.trim();
+      const newBody = inputBody.value.trim();
+      if (!newTitle || !newBody) {
+        (!newTitle ? inputTitle : inputBody).focus();
+        return;
+      }
+      state.folderState.prompts.push({
+        id: "p_" + Date.now().toString(36),
+        title: newTitle,
+        content: newBody + "\n\n"
+      });
+      saveFolderData(state.folderState);
+      inputTitle.value = "";
+      inputBody.value = "";
+      renderPromptsList();
+    });
+    formBox.appendChild(inputTitle);
+    formBox.appendChild(inputBody);
+    formBox.appendChild(addPromptBtn);
+    const actions = document.createElement("div");
+    actions.className = "gcm-modal-actions";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "gcm-btn gcm-btn-cancel";
+    closeBtn.textContent = t().cancel;
+    closeBtn.addEventListener("click", () => overlay.remove());
+    actions.appendChild(closeBtn);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    card.appendChild(title);
+    card.appendChild(desc);
+    card.appendChild(listContainer);
+    card.appendChild(formBox);
+    card.appendChild(actions);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
   }
 
   // src/panel.js
@@ -1108,6 +1440,83 @@
       document.addEventListener("pointercancel", onEnd, true);
     });
   }
+  function registerGlobalListeners() {
+    const applyExternalState = (incoming) => {
+      const keepView = { filter: state.activeFolderFilter, sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed };
+      const langChanged = incoming.lang !== state.folderState.lang;
+      state.folderState = { ...incoming, view: keepView };
+      if (!BUILTIN_FILTERS.includes(state.activeFolderFilter) && !state.folderState.folders.some((f) => f.id === state.activeFolderFilter)) {
+        state.activeFolderFilter = "ALL";
+      }
+      autoClassifiedVisited.clear();
+      if (langChanged) {
+        document.getElementById("gcm-toolbar")?.remove();
+        document.getElementById("gcm-folders-box")?.remove();
+      } else {
+        const box = document.getElementById("gcm-folders-box");
+        if (box) {
+          box.classList.toggle("gcm-minimized", state.folderState.minimized);
+          clampBoxPosition(box);
+        }
+        const pills = document.getElementById("gcm-pills-container");
+        if (pills) delete pills.dataset.sig;
+      }
+      refreshUI();
+    };
+    window.addEventListener("storage", (e) => {
+      if (e.key !== P.storageKey || !e.newValue) return;
+      try {
+        const incoming = normalizeStoredState(JSON.parse(e.newValue), state.folderState.lang);
+        applyExternalState(incoming);
+      } catch (_) {
+      }
+    });
+    initCloudSync(
+      () => state.folderState,
+      (merged) => applyExternalState(merged)
+    );
+    document.addEventListener("keydown", (e) => {
+      if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey) return;
+      const key = (e.key || "").toUpperCase();
+      if (key === "F") {
+        e.preventDefault();
+        state.folderState.minimized = !state.folderState.minimized;
+        saveFolderData(state.folderState);
+        refreshUI();
+      } else if (key === "S") {
+        e.preventDefault();
+        if (state.folderState.minimized) {
+          state.folderState.minimized = false;
+          saveFolderData(state.folderState);
+          refreshUI();
+        }
+        const input = document.querySelector("#gcm-folders-box .gcm-search-input");
+        input?.focus();
+        input?.select();
+      }
+    });
+    try {
+      if (typeof chrome !== "undefined" && chrome.runtime?.onMessage?.addListener) {
+        chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+          if (!msg || typeof msg.action !== "string") return;
+          if (msg.action === "TOGGLE_PANEL") {
+            state.folderState.minimized = !state.folderState.minimized;
+            saveFolderData(state.folderState);
+            refreshUI();
+            sendResponse?.({ ok: true, minimized: state.folderState.minimized });
+          } else if (msg.action === "OPEN_PROMPTS") {
+            openPromptsModal();
+            sendResponse?.({ ok: true });
+          } else if (msg.action === "EXPORT_BACKUP") {
+            exportBackupConfig();
+            sendResponse?.({ ok: true });
+          }
+        });
+      }
+    } catch (_) {
+    }
+    window.addEventListener("resize", () => clampBoxPosition(document.getElementById("gcm-folders-box")));
+  }
   function buildFoldersPanelDOM(box) {
     box.textContent = "";
     const header = document.createElement("div");
@@ -1222,7 +1631,14 @@
     restoreBtn.textContent = t().importBtn;
     restoreBtn.title = t().importTitle;
     restoreBtn.addEventListener("click", importBackupConfig);
+    const promptsBtn = document.createElement("button");
+    promptsBtn.id = "gcm-prompts-btn";
+    promptsBtn.className = "gcm-footer-btn";
+    promptsBtn.textContent = t().promptsBtn;
+    promptsBtn.title = t().promptsBtnTitle;
+    promptsBtn.addEventListener("click", openPromptsModal);
     footer.appendChild(scrollBtn);
+    footer.appendChild(promptsBtn);
     footer.appendChild(backupBtn);
     footer.appendChild(restoreBtn);
     body.appendChild(searchRow);
@@ -1284,7 +1700,7 @@
       tEl.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
       tEl.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
     }
-    const countConvLinks = (el) => el.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length;
+    const countConvLinks = (el) => el.querySelectorAll(CONV_LINK_SELECTOR).length;
     const scopes = [];
     scopes.push(row);
     if (row.parentElement && row.parentElement !== document.body && countConvLinks(row.parentElement) <= 1) {
@@ -1332,9 +1748,9 @@
     const parentList = containerToRemove.parentElement;
     containerToRemove.remove();
     if (parentList && (parentList.tagName === "OL" || parentList.tagName === "UL")) {
-      if (parentList.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+      if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
         const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
           sectionWrapper.remove();
         }
       }
@@ -1344,15 +1760,15 @@
     const sidebar = getSidebarElement() || document;
     const lis = sidebar.querySelectorAll("li");
     lis.forEach((li) => {
-      if (!li.querySelector('a[href*="/app/"], a[href*="/c/"]') && !li.textContent?.trim()) {
+      if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
         li.remove();
       }
     });
     const lists = sidebar.querySelectorAll("ol, ul");
     lists.forEach((list) => {
-      if (list.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+      if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
         const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll('a[href*="/app/"], a[href*="/c/"]').length === 0) {
+        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
           sectionWrapper.remove();
         }
       }
@@ -2025,6 +2441,7 @@ ${text}
       setTimeout(init, 300);
       return;
     }
+    registerGlobalListeners();
     setupDelegatedSidebarListener();
     setTimeout(refreshUI, 800);
     const observer = new MutationObserver((mutations) => {
