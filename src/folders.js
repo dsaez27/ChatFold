@@ -1,3 +1,4 @@
+import { ICONS, createIconElement } from './icons.js';
 import { refreshUI } from './main.js';
 import { isSingleRowContainer } from './sidebar.js';
 import { autoClassifiedVisited, saveView, state, t } from './state.js';
@@ -52,7 +53,7 @@ export function applyFolderBadgesAndFilter(items) {
       if (!lockEl) {
         lockEl = document.createElement('span');
         lockEl.className = 'gcm-lock-icon';
-        lockEl.textContent = '🔒';
+        lockEl.appendChild(createIconElement(ICONS.lockSmall));
         lockEl.title = t().lockIconTitle;
         lockEl.dataset.convId = id;
         row.appendChild(lockEl);

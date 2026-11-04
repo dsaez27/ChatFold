@@ -360,7 +360,26 @@
   background: var(--gcm-select-wrap-hover) !important;
 }
 
+/* Iconos SVG vectoriales */
+.gcm-svg-icon,
+.gcm-svg-logo {
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  pointer-events: none !important;
+}
+
+.gcm-mini-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 7px !important;
+}
+
 .gcm-add-folder-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
   background: linear-gradient(135deg, rgba(138, 180, 248, 0.28), rgba(138, 180, 248, 0.12)) !important;
   color: #d2e3fc !important;
   border: 1px solid rgba(168, 199, 250, 0.35) !important;
@@ -399,6 +418,13 @@
   align-items: center !important;
 }
 
+.gcm-search-lead-icon {
+  position: absolute !important;
+  left: 9px !important;
+  color: var(--gcm-placeholder) !important;
+  pointer-events: none !important;
+}
+
 .gcm-search-input {
   width: 100% !important;
   min-width: 0 !important;
@@ -406,7 +432,7 @@
   border: 1px solid var(--gcm-border-input) !important;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.25) !important;
   border-radius: 11px !important;
-  padding: 6px 24px 6px 10px !important;
+  padding: 6px 24px 6px 28px !important;
   font-size: 12px !important;
   color: var(--gcm-text-input) !important;
   outline: none !important;
@@ -447,6 +473,9 @@
 }
 
 .gcm-sort-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
   background: var(--gcm-sort-btn-bg) !important;
   border: 1px solid var(--gcm-sort-btn-border) !important;
   color: var(--gcm-text-secondary) !important;
@@ -928,6 +957,12 @@ body.gcm-stealth-delete .fixed.inset-0.bg-black\/60 {
   font-weight: 600 !important;
   margin-bottom: 10px !important;
   color: var(--gcm-modal-title) !important;
+}
+
+.gcm-modal-title-icon {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
 .gcm-modal-desc {

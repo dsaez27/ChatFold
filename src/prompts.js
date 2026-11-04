@@ -1,4 +1,5 @@
 import { updateStatusToast } from './dialogs.js';
+import { ICONS, createIconElement, setButtonIconText } from './icons.js';
 import { SELECTORS } from './platform.js';
 import { state, t } from './state.js';
 import { saveFolderData } from './storage.js';
@@ -59,8 +60,8 @@ export function openPromptsModal() {
   card.className = 'gcm-modal-card gcm-prompts-modal-card';
 
   const title = document.createElement('div');
-  title.className = 'gcm-modal-title';
-  title.textContent = t().modalPromptsTitle;
+  title.className = 'gcm-modal-title gcm-modal-title-icon';
+  setButtonIconText(title, ICONS.zap, t().modalPromptsTitle);
 
   const desc = document.createElement('div');
   desc.className = 'gcm-modal-desc';
@@ -110,7 +111,7 @@ export function openPromptsModal() {
 
       const delBtn = document.createElement('button');
       delBtn.className = 'gcm-prompt-del-btn';
-      delBtn.textContent = '×';
+      delBtn.appendChild(createIconElement(ICONS.close));
       delBtn.title = t().deletePromptTitle;
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -150,7 +151,7 @@ export function openPromptsModal() {
 
   const addPromptBtn = document.createElement('button');
   addPromptBtn.className = 'gcm-btn gcm-btn-folder gcm-add-prompt-submit';
-  addPromptBtn.textContent = t().addPromptBtn;
+  setButtonIconText(addPromptBtn, ICONS.plus, t().addPromptBtn);
   addPromptBtn.addEventListener('click', () => {
     const newTitle = inputTitle.value.trim();
     const newBody = inputBody.value.trim();

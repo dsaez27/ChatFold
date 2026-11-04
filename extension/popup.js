@@ -6,6 +6,24 @@ const PLATFORM_LIST = [
   { key: 'opencode', name: 'OpenCode AI', host: 'opencode.ai', url: 'https://opencode.ai/', storageKey: 'gcm_opencode_folders_data_v1', color: '#a142f4' }
 ];
 
+const POPUP_ICONS = {
+  folder: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+  chat: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+};
+
+const domParser = new DOMParser();
+function makeStatPill(svgStr, count) {
+  const wrap = document.createElement('span');
+  wrap.className = 'cf-stat-item';
+  const doc = domParser.parseFromString(svgStr, 'image/svg+xml');
+  wrap.appendChild(document.importNode(doc.documentElement, true));
+  const num = document.createElement('span');
+  num.textContent = String(count);
+  wrap.appendChild(num);
+  return wrap;
+}
+
 function detectActivePlatformKey(urlStr) {
   if (!urlStr) return null;
   try {
@@ -62,7 +80,9 @@ function renderPlatforms(syncData = {}, activePlatformKey = null) {
     const stats = document.createElement('span');
     stats.className = 'cf-platform-stats';
     stats.title = `${foldersCount} carpetas · ${assignedCount} chats en carpetas · ${lockedCount} protegidos`;
-    stats.textContent = `📁 ${foldersCount} · 💬 ${assignedCount} · 🔒 ${lockedCount}`;
+    stats.appendChild(makeStatPill(POPUP_ICONS.folder, foldersCount));
+    stats.appendChild(makeStatPill(POPUP_ICONS.chat, assignedCount));
+    stats.appendChild(makeStatPill(POPUP_ICONS.lock, lockedCount));
 
     card.appendChild(left);
     card.appendChild(stats);

@@ -1,4 +1,5 @@
 import { openCreateFolderModal, updateStatusToast } from './dialogs.js';
+import { ICONS, setButtonIconText } from './icons.js';
 import { refreshUI } from './main.js';
 import { getSidebarElement } from './sidebar.js';
 import { selectedMap, state, t } from './state.js';
@@ -85,7 +86,7 @@ export function toggleMoveToFolderPopover(anchorBtn) {
 
   const removeBtn = document.createElement('button');
   removeBtn.className = 'gcm-popover-item';
-  removeBtn.textContent = t().removeFromFolder;
+  setButtonIconText(removeBtn, ICONS.folderMinus, t().removeFromFolder);
   removeBtn.addEventListener('click', () => {
     assignSelectedToFolder(null);
     popover.remove();
@@ -95,7 +96,7 @@ export function toggleMoveToFolderPopover(anchorBtn) {
   const createNewBtn = document.createElement('button');
   createNewBtn.className = 'gcm-popover-item';
   createNewBtn.style.color = '#a8c7fa';
-  createNewBtn.textContent = t().createNewFolderMenu;
+  setButtonIconText(createNewBtn, ICONS.folderPlus, t().createNewFolderMenu);
   createNewBtn.addEventListener('click', () => {
     popover.remove();
     openCreateFolderModal((newFolder) => {
@@ -143,7 +144,7 @@ export function setupDelegatedSidebarListener() {
   const stopPressOnControls = (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
-    if (target.classList.contains('gcm-checkbox') || target.classList.contains('gcm-lock-icon')) {
+    if (target.classList.contains('gcm-checkbox') || target.closest('.gcm-lock-icon')) {
       e.stopPropagation();
       if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (e.type === 'mousedown' && target.id !== 'gcm-select-all') {
@@ -162,11 +163,12 @@ export function setupDelegatedSidebarListener() {
       const target = e.target;
       if (!(target instanceof Element)) return;
 
-      if (target.classList.contains('gcm-lock-icon')) {
+      const lockTarget = target.closest('.gcm-lock-icon');
+      if (lockTarget) {
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
         e.preventDefault();
-        const id = target.dataset.convId;
+        const id = lockTarget.dataset.convId;
         if (id) {
           delete state.folderState.protectedIds[id];
           saveFolderData(state.folderState);

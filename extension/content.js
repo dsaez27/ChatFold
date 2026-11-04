@@ -1,5 +1,68 @@
 /* Generado con esbuild desde src/. No editar a mano: ejecutar "npm run build". */
 (() => {
+  // src/icons.js
+  var ICONS = {
+    // Logo oficial de ChatFold en SVG vectorial (sin fondo)
+    chatfoldLogo: `<svg class="gcm-svg-logo" viewBox="0 0 1024 1024" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gcmLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#5B6EF7" />
+        <stop offset="50%" stop-color="#3B82F6" />
+        <stop offset="100%" stop-color="#1DA1F2" />
+      </linearGradient>
+    </defs>
+    <path d="M280 120 L590 120 L844 374 L844 630 A170 170 0 0 1 674 800 L455 800 L295 940 L295 800 L280 800 A170 170 0 0 1 110 630 L110 290 A170 170 0 0 1 280 120 Z" fill="url(#gcmLogoGrad)"/>
+    <path d="M590 120 L844 374 L690 374 A100 100 0 0 1 590 274 Z" fill="#132238"/>
+    <rect x="275" y="405" width="315" height="62" rx="31" fill="#FFFFFF"/>
+    <rect x="275" y="535" width="415" height="62" rx="31" fill="#CBE7FB"/>
+  </svg>`,
+    folderPlus: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+    folder: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+    folderMinus: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
+    search: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+    sort: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>`,
+    lock: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    lockSmall: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fbbc04" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    download: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
+    upload: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`,
+    fileText: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
+    trash: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`,
+    stop: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>`,
+    zap: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`,
+    chevronsDown: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg>`,
+    chevronRight: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`,
+    menu: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>`,
+    minus: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>`,
+    close: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+    plus: `<svg class="gcm-svg-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`
+  };
+  var svgParser = typeof DOMParser !== "undefined" ? new DOMParser() : null;
+  function createIconElement(svgString) {
+    if (svgParser) {
+      const doc = svgParser.parseFromString(svgString.trim(), "image/svg+xml");
+      const svg = doc.documentElement;
+      if (svg && svg.tagName.toLowerCase() === "svg") {
+        return document.importNode(svg, true);
+      }
+    }
+    const span = document.createElement("span");
+    span.className = "gcm-icon-wrap";
+    span.innerHTML = svgString;
+    return span.firstElementChild || span;
+  }
+  function setButtonIconText(el, svgString, text) {
+    if (!el) return;
+    el.textContent = "";
+    if (svgString) {
+      el.appendChild(createIconElement(svgString));
+    }
+    if (text) {
+      const span = document.createElement("span");
+      span.textContent = text;
+      el.appendChild(span);
+    }
+  }
+
   // src/platform.js
   var APP_VERSION = typeof chrome !== "undefined" && chrome.runtime?.getManifest?.().version || "0.0.0";
   function detectPlatform() {
@@ -138,39 +201,39 @@
       toolbarCollapseTitle: "Contraer barra superior",
       toolbarExpandTitle: "Expandir barra superior",
       langBtnTitle: "Switch language (Español / English)",
-      newFolderBtn: "📂",
+      newFolderBtn: "Nueva",
       newFolderTitle: "Crear nueva carpeta con palabras clave automáticas",
-      searchPlaceholder: "🔍 Buscar conversación...",
+      searchPlaceholder: "Buscar conversación...",
       sortTitle: "Cambiar orden: Cronológico / A→Z / Z→A",
-      sortRecent: "⇅ Recientes",
-      sortAZ: "⇅ A → Z",
-      sortZA: "⇅ Z → A",
+      sortRecent: "Recientes",
+      sortAZ: "A → Z",
+      sortZA: "Z → A",
       pillAll: "Todas",
-      pillProtected: "🔒 Protegidas",
+      pillProtected: "Protegidas",
       pillUnassigned: "Sin carpeta",
       autoRulesPrefix: "Auto-reglas",
       delFolderTitle: (name) => `Eliminar carpeta "${name}" (no borra las conversaciones)`,
-      loadAllBtn: "⏬ Cargar",
-      stopLoadBtn: "⏹ Detener carga",
+      loadAllBtn: "Cargar",
+      stopLoadBtn: "Detener",
       loadAllTitle: "Bajar automáticamente por la barra lateral para cargar todo tu historial",
-      backupBtn: "💾 Respaldar",
+      backupBtn: "Respaldar",
       backupTitle: "Guardar tus carpetas y configuración en un archivo JSON",
-      importBtn: "📂 Importar",
+      importBtn: "Importar",
       importTitle: "Restaurar carpetas desde un archivo JSON",
       selectAll: "Todo",
       selectAllTitle: "Seleccionar o deseleccionar todas las conversaciones visibles",
-      folderBtn: (n) => `📁 Carpeta (${n})`,
+      folderBtn: (n) => `Carpeta (${n})`,
       folderBtnTitle: "Asignar conversaciones seleccionadas a una carpeta",
-      protectBtn: "🔒 Proteger",
+      protectBtn: "Proteger",
       protectBtnTitle: "Proteger o desproteger conversaciones seleccionadas contra borrado accidental",
-      exportBtn: "📥 Exportar .md",
+      exportBtn: "Exportar .md",
       exportBtnTitle: "Exportar conversaciones seleccionadas y el chat activo a Markdown (.md)",
-      deleteBtn: (n) => `🗑️ Borrar (${n})`,
-      stopBtn: "⏹ Detener",
+      deleteBtn: (n) => `Borrar (${n})`,
+      stopBtn: "Detener",
       checkboxTitle: "Seleccionar conversación (Shift + Clic para rango)",
       lockIconTitle: "Protegida contra borrado (Clic para quitar protección)",
-      removeFromFolder: "🚫 Quitar de carpeta",
-      createNewFolderMenu: "➕ Nueva carpeta...",
+      removeFromFolder: "Quitar de carpeta",
+      createNewFolderMenu: "Nueva carpeta...",
       modalNewFolderTitle: "Nueva Carpeta Inteligente",
       modalNewFolderDesc: "Elige un nombre, un color y palabras clave opcionales para auto-clasificar tus chats:",
       modalFolderNamePlaceholder: "Nombre de carpeta (Ej. Trabajo, Finanzas, Inglés...)",
@@ -203,13 +266,13 @@
       mdFolderLabel: "Carpeta",
       mdActiveChatHeader: "Contenido de la Conversación Activa en Pantalla",
       mdUser: "🧑 Usuario",
-      promptsBtn: "⚡ Prompts",
+      promptsBtn: "Prompts",
       promptsBtnTitle: "Abrir tu bóveda de Prompts rápidos reutilizables",
-      modalPromptsTitle: "⚡ Bóveda de Prompts Rápidos",
+      modalPromptsTitle: "Bóveda de Prompts Rápidos",
       modalPromptsDesc: "Haz clic en un prompt para insertarlo directamente en el chat activo, o crea uno nuevo:",
       promptTitlePlaceholder: "Título corto (Ej. Revisor Senior de Código)",
       promptBodyPlaceholder: "Escribe las instrucciones completas del prompt...",
-      addPromptBtn: "➕ Guardar Prompt",
+      addPromptBtn: "Guardar Prompt",
       insertPromptBtn: "Insertar",
       deletePromptTitle: "Eliminar prompt",
       promptsEmpty: "Aún no tienes prompts guardados. Crea uno abajo para reutilizarlo en 1 clic.",
@@ -245,39 +308,39 @@
       toolbarCollapseTitle: "Collapse top bar",
       toolbarExpandTitle: "Expand top bar",
       langBtnTitle: "Cambiar idioma (English / Español)",
-      newFolderBtn: "📂",
+      newFolderBtn: "New",
       newFolderTitle: "Create a new smart folder with auto-keywords",
-      searchPlaceholder: "🔍 Search conversation...",
+      searchPlaceholder: "Search conversation...",
       sortTitle: "Toggle sort order: Recent / A→Z / Z→A",
-      sortRecent: "⇅ Recent",
-      sortAZ: "⇅ A → Z",
-      sortZA: "⇅ Z → A",
+      sortRecent: "Recent",
+      sortAZ: "A → Z",
+      sortZA: "Z → A",
       pillAll: "All",
-      pillProtected: "🔒 Protected",
+      pillProtected: "Protected",
       pillUnassigned: "Unassigned",
       autoRulesPrefix: "Auto-rules",
       delFolderTitle: (name) => `Delete folder "${name}" (does not delete chats)`,
-      loadAllBtn: "⏬ Load",
-      stopLoadBtn: "⏹ Stop Loading",
+      loadAllBtn: "Load",
+      stopLoadBtn: "Stop",
       loadAllTitle: "Auto-scroll the sidebar to load all your older chat history",
-      backupBtn: "💾 Backup",
+      backupBtn: "Backup",
       backupTitle: "Export your folders and settings to a JSON file",
-      importBtn: "📂 Import",
+      importBtn: "Import",
       importTitle: "Restore folders and settings from a JSON file",
       selectAll: "All",
       selectAllTitle: "Select or deselect all visible conversations",
-      folderBtn: (n) => `📁 Folder (${n})`,
+      folderBtn: (n) => `Folder (${n})`,
       folderBtnTitle: "Assign selected conversations to a folder",
-      protectBtn: "🔒 Protect",
+      protectBtn: "Protect",
       protectBtnTitle: "Protect or unprotect selected conversations against accidental deletion",
-      exportBtn: "📥 Export .md",
+      exportBtn: "Export .md",
       exportBtnTitle: "Export selected conversations and active chat to Markdown (.md)",
-      deleteBtn: (n) => `🗑️ Delete (${n})`,
-      stopBtn: "⏹ Stop",
+      deleteBtn: (n) => `Delete (${n})`,
+      stopBtn: "Stop",
       checkboxTitle: "Select conversation (Shift + Click for range)",
       lockIconTitle: "Protected from deletion (Click to unprotect)",
-      removeFromFolder: "🚫 Remove from folder",
-      createNewFolderMenu: "➕ New folder...",
+      removeFromFolder: "Remove from folder",
+      createNewFolderMenu: "New folder...",
       modalNewFolderTitle: "New Smart Folder",
       modalNewFolderDesc: "Choose a name, color, and optional keywords to auto-classify your chats:",
       modalFolderNamePlaceholder: "Folder name (e.g., Work, Finance, Coding...)",
@@ -310,13 +373,13 @@
       mdFolderLabel: "Folder",
       mdActiveChatHeader: "Active Conversation Content on Screen",
       mdUser: "🧑 User",
-      promptsBtn: "⚡ Prompts",
+      promptsBtn: "Prompts",
       promptsBtnTitle: "Open your reusable Quick Prompt Vault",
-      modalPromptsTitle: "⚡ Quick Prompt Vault",
+      modalPromptsTitle: "Quick Prompt Vault",
       modalPromptsDesc: "Click any prompt to insert it directly into the active chat, or save a new template:",
       promptTitlePlaceholder: "Short title (e.g., Senior Code Reviewer)",
       promptBodyPlaceholder: "Write the full prompt instructions...",
-      addPromptBtn: "➕ Save Prompt",
+      addPromptBtn: "Save Prompt",
       insertPromptBtn: "Insert",
       deletePromptTitle: "Delete prompt",
       promptsEmpty: "No saved prompts yet. Create one below to insert it with 1 click.",
@@ -650,7 +713,7 @@
         if (!lockEl) {
           lockEl = document.createElement("span");
           lockEl.className = "gcm-lock-icon";
-          lockEl.textContent = "🔒";
+          lockEl.appendChild(createIconElement(ICONS.lockSmall));
           lockEl.title = t().lockIconTitle;
           lockEl.dataset.convId = id;
           row.appendChild(lockEl);
@@ -1155,8 +1218,8 @@ ${text}` : text;
     const card = document.createElement("div");
     card.className = "gcm-modal-card gcm-prompts-modal-card";
     const title = document.createElement("div");
-    title.className = "gcm-modal-title";
-    title.textContent = t().modalPromptsTitle;
+    title.className = "gcm-modal-title gcm-modal-title-icon";
+    setButtonIconText(title, ICONS.zap, t().modalPromptsTitle);
     const desc = document.createElement("div");
     desc.className = "gcm-modal-desc";
     desc.textContent = t().modalPromptsDesc;
@@ -1196,7 +1259,7 @@ ${text}` : text;
         });
         const delBtn = document.createElement("button");
         delBtn.className = "gcm-prompt-del-btn";
-        delBtn.textContent = "×";
+        delBtn.appendChild(createIconElement(ICONS.close));
         delBtn.title = t().deletePromptTitle;
         delBtn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1228,7 +1291,7 @@ ${text}` : text;
     inputBody.rows = 3;
     const addPromptBtn = document.createElement("button");
     addPromptBtn.className = "gcm-btn gcm-btn-folder gcm-add-prompt-submit";
-    addPromptBtn.textContent = t().addPromptBtn;
+    setButtonIconText(addPromptBtn, ICONS.plus, t().addPromptBtn);
     addPromptBtn.addEventListener("click", () => {
       const newTitle = inputTitle.value.trim();
       const newBody = inputBody.value.trim();
@@ -1365,16 +1428,17 @@ ${text}` : text;
     pillsContainer.appendChild(frag);
     const sortBtn = document.getElementById("gcm-sort-btn");
     if (sortBtn) {
-      sortBtn.textContent = state.sortMode === "DEFAULT" ? t().sortRecent : state.sortMode === "AZ" ? t().sortAZ : t().sortZA;
+      const sortLabel = state.sortMode === "DEFAULT" ? t().sortRecent : state.sortMode === "AZ" ? t().sortAZ : t().sortZA;
+      setButtonIconText(sortBtn, ICONS.sort, sortLabel);
     }
     const scrollBtn = document.getElementById("gcm-autoscroll-btn");
     if (scrollBtn) {
       if (state.autoScrollActive) {
         scrollBtn.classList.add("active");
-        scrollBtn.textContent = t().stopLoadBtn;
+        setButtonIconText(scrollBtn, ICONS.stop, t().stopLoadBtn);
       } else {
         scrollBtn.classList.remove("active");
-        scrollBtn.textContent = t().loadAllBtn;
+        setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
       }
     }
   }
@@ -1542,19 +1606,8 @@ ${text}` : text;
     const title = document.createElement("span");
     title.style.display = "inline-flex";
     title.style.alignItems = "center";
-    title.style.gap = "6px";
-    if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.getURL === "function") {
-      const iconImg = document.createElement("img");
-      iconImg.src = chrome.runtime.getURL("icons/icon32.png");
-      iconImg.width = 16;
-      iconImg.height = 16;
-      iconImg.style.borderRadius = "4px";
-      title.appendChild(iconImg);
-    } else {
-      const badgeIcon = document.createElement("span");
-      badgeIcon.textContent = "✨";
-      title.appendChild(badgeIcon);
-    }
+    title.style.gap = "7px";
+    title.appendChild(createIconElement(ICONS.chatfoldLogo));
     const titleText = document.createElement("span");
     titleText.textContent = `${t().panelTitle} v${APP_VERSION}`;
     title.appendChild(titleText);
@@ -1577,15 +1630,15 @@ ${text}` : text;
     });
     const addBtn = document.createElement("button");
     addBtn.className = "gcm-add-folder-btn";
-    addBtn.textContent = t().newFolderBtn;
+    setButtonIconText(addBtn, ICONS.folderPlus, t().newFolderBtn);
     addBtn.title = t().newFolderTitle;
     addBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       openCreateFolderModal();
     });
     const minBtn = document.createElement("button");
-    minBtn.className = "gcm-mini-btn";
-    minBtn.textContent = "—";
+    minBtn.className = "gcm-mini-btn gcm-mini-icon-btn";
+    minBtn.appendChild(createIconElement(ICONS.minus));
     minBtn.title = t().toggleMinTitle;
     minBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1605,6 +1658,8 @@ ${text}` : text;
     searchRow.className = "gcm-search-sort-row";
     const searchWrap = document.createElement("div");
     searchWrap.className = "gcm-search-wrap";
+    const searchIcon = createIconElement(ICONS.search);
+    searchIcon.classList.add("gcm-search-lead-icon");
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.className = "gcm-search-input";
@@ -1613,7 +1668,7 @@ ${text}` : text;
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className = "gcm-search-clear";
-    clearBtn.textContent = "×";
+    clearBtn.appendChild(createIconElement(ICONS.close));
     clearBtn.title = t().searchClearTitle;
     clearBtn.style.display = state.searchQuery ? "inline-flex" : "none";
     let searchDebounce = null;
@@ -1632,13 +1687,14 @@ ${text}` : text;
       applyFolderBadgesAndFilter(getConversationRows());
       searchInput.focus();
     });
+    searchWrap.appendChild(searchIcon);
     searchWrap.appendChild(searchInput);
     searchWrap.appendChild(clearBtn);
     const sortBtn = document.createElement("button");
     sortBtn.id = "gcm-sort-btn";
     sortBtn.className = "gcm-sort-btn";
     sortBtn.title = t().sortTitle;
-    sortBtn.textContent = t().sortRecent;
+    setButtonIconText(sortBtn, ICONS.sort, t().sortRecent);
     sortBtn.addEventListener("click", () => {
       state.sortMode = state.sortMode === "DEFAULT" ? "AZ" : state.sortMode === "AZ" ? "ZA" : "DEFAULT";
       saveView();
@@ -1654,23 +1710,23 @@ ${text}` : text;
     const scrollBtn = document.createElement("button");
     scrollBtn.id = "gcm-autoscroll-btn";
     scrollBtn.className = "gcm-footer-btn";
-    scrollBtn.textContent = t().loadAllBtn;
+    setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
     scrollBtn.title = t().loadAllTitle;
     scrollBtn.addEventListener("click", toggleAutoScrollHistory);
     const backupBtn = document.createElement("button");
     backupBtn.className = "gcm-footer-btn";
-    backupBtn.textContent = t().backupBtn;
+    setButtonIconText(backupBtn, ICONS.download, t().backupBtn);
     backupBtn.title = t().backupTitle;
     backupBtn.addEventListener("click", exportBackupConfig);
     const restoreBtn = document.createElement("button");
     restoreBtn.className = "gcm-footer-btn";
-    restoreBtn.textContent = t().importBtn;
+    setButtonIconText(restoreBtn, ICONS.upload, t().importBtn);
     restoreBtn.title = t().importTitle;
     restoreBtn.addEventListener("click", importBackupConfig);
     const promptsBtn = document.createElement("button");
     promptsBtn.id = "gcm-prompts-btn";
     promptsBtn.className = "gcm-footer-btn";
-    promptsBtn.textContent = t().promptsBtn;
+    setButtonIconText(promptsBtn, ICONS.zap, t().promptsBtn);
     promptsBtn.title = t().promptsBtnTitle;
     promptsBtn.addEventListener("click", openPromptsModal);
     footer.appendChild(scrollBtn);
@@ -1689,7 +1745,9 @@ ${text}` : text;
     if (Array.isArray(keywords) && keywords.length > 0) {
       pill.title = `${t().autoRulesPrefix}: ${keywords.join(", ")}`;
     }
-    if (color) {
+    if (id === "PROTECTED") {
+      pill.appendChild(createIconElement(ICONS.lockSmall));
+    } else if (color) {
       const dot = document.createElement("span");
       dot.className = "gcm-folder-dot";
       dot.style.backgroundColor = color;
@@ -2076,33 +2134,33 @@ ${text}
     folderBtn.id = "gcm-folder-btn";
     folderBtn.className = "gcm-btn gcm-btn-folder";
     folderBtn.disabled = true;
-    folderBtn.textContent = t().folderBtn(0);
+    setButtonIconText(folderBtn, ICONS.folder, t().folderBtn(0));
     folderBtn.title = t().folderBtnTitle;
     folderBtn.addEventListener("click", () => toggleMoveToFolderPopover(folderBtn));
     const protectBtn = document.createElement("button");
     protectBtn.id = "gcm-protect-btn";
     protectBtn.className = "gcm-btn gcm-btn-neutral";
     protectBtn.disabled = true;
-    protectBtn.textContent = t().protectBtn;
+    setButtonIconText(protectBtn, ICONS.lock, t().protectBtn);
     protectBtn.title = t().protectBtnTitle;
     protectBtn.addEventListener("click", toggleProtectSelected);
     const exportBtn = document.createElement("button");
     exportBtn.id = "gcm-export-btn";
     exportBtn.className = "gcm-btn gcm-btn-neutral";
-    exportBtn.textContent = t().exportBtn;
+    setButtonIconText(exportBtn, ICONS.fileText, t().exportBtn);
     exportBtn.title = t().exportBtnTitle;
     exportBtn.addEventListener("click", exportSelectedConversationsToMarkdown);
     const deleteBtn = document.createElement("button");
     deleteBtn.id = "gcm-delete-btn";
     deleteBtn.className = "gcm-btn gcm-btn-danger";
     deleteBtn.disabled = true;
-    deleteBtn.textContent = t().deleteBtn(0);
+    setButtonIconText(deleteBtn, ICONS.trash, t().deleteBtn(0));
     deleteBtn.addEventListener("click", deleteSelectedChats);
     const stopBtn = document.createElement("button");
     stopBtn.id = "gcm-stop-btn";
     stopBtn.className = "gcm-btn gcm-btn-stop";
     stopBtn.style.display = "none";
-    stopBtn.textContent = t().stopBtn;
+    setButtonIconText(stopBtn, ICONS.stop, t().stopBtn);
     stopBtn.addEventListener("click", stopDeletion);
     const collapseBtn = document.createElement("button");
     collapseBtn.id = "gcm-toolbar-toggle";
@@ -2127,7 +2185,8 @@ ${text}
     const btn = document.getElementById("gcm-toolbar-toggle");
     if (!toolbar || !btn) return;
     toolbar.classList.toggle("gcm-collapsed", state.toolbarCollapsed);
-    btn.textContent = state.toolbarCollapsed ? "☰" : "›";
+    btn.textContent = "";
+    btn.appendChild(createIconElement(state.toolbarCollapsed ? ICONS.menu : ICONS.chevronRight));
     btn.title = state.toolbarCollapsed ? t().toolbarExpandTitle : t().toolbarCollapseTitle;
   }
   function updateToolbarState() {
@@ -2170,13 +2229,19 @@ ${text}
       const count = selectedMap.size;
       folderBtn.disabled = count === 0;
       const fText = t().folderBtn(count);
-      if (folderBtn.textContent !== fText) folderBtn.textContent = fText;
+      if (folderBtn.dataset.label !== fText) {
+        folderBtn.dataset.label = fText;
+        setButtonIconText(folderBtn, ICONS.folder, fText);
+      }
       if (protectBtn) {
         protectBtn.disabled = count === 0;
       }
       deleteBtn.disabled = count === 0;
       const dText = t().deleteBtn(count);
-      if (deleteBtn.textContent !== dText) deleteBtn.textContent = dText;
+      if (deleteBtn.dataset.label !== dText) {
+        deleteBtn.dataset.label = dText;
+        setButtonIconText(deleteBtn, ICONS.trash, dText);
+      }
     }
   }
 
@@ -2249,7 +2314,7 @@ ${text}
     popover.appendChild(divider);
     const removeBtn = document.createElement("button");
     removeBtn.className = "gcm-popover-item";
-    removeBtn.textContent = t().removeFromFolder;
+    setButtonIconText(removeBtn, ICONS.folderMinus, t().removeFromFolder);
     removeBtn.addEventListener("click", () => {
       assignSelectedToFolder(null);
       popover.remove();
@@ -2258,7 +2323,7 @@ ${text}
     const createNewBtn = document.createElement("button");
     createNewBtn.className = "gcm-popover-item";
     createNewBtn.style.color = "#a8c7fa";
-    createNewBtn.textContent = t().createNewFolderMenu;
+    setButtonIconText(createNewBtn, ICONS.folderPlus, t().createNewFolderMenu);
     createNewBtn.addEventListener("click", () => {
       popover.remove();
       openCreateFolderModal((newFolder) => {
@@ -2299,7 +2364,7 @@ ${text}
     const stopPressOnControls = (e) => {
       const target = e.target;
       if (!(target instanceof Element)) return;
-      if (target.classList.contains("gcm-checkbox") || target.classList.contains("gcm-lock-icon")) {
+      if (target.classList.contains("gcm-checkbox") || target.closest(".gcm-lock-icon")) {
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
         if (e.type === "mousedown" && target.id !== "gcm-select-all") {
@@ -2316,11 +2381,12 @@ ${text}
       (e) => {
         const target = e.target;
         if (!(target instanceof Element)) return;
-        if (target.classList.contains("gcm-lock-icon")) {
+        const lockTarget = target.closest(".gcm-lock-icon");
+        if (lockTarget) {
           e.stopPropagation();
           if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
           e.preventDefault();
-          const id = target.dataset.convId;
+          const id = lockTarget.dataset.convId;
           if (id) {
             delete state.folderState.protectedIds[id];
             saveFolderData(state.folderState);

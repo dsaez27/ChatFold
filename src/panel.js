@@ -2,6 +2,7 @@ import { toggleAutoScrollHistory } from './autoscroll.js';
 import { exportBackupConfig, importBackupConfig } from './backup.js';
 import { openCreateFolderModal } from './dialogs.js';
 import { applyFolderBadgesAndFilter, deleteFolderById } from './folders.js';
+import { ICONS, createIconElement, setButtonIconText } from './icons.js';
 import { refreshUI } from './main.js';
 import { APP_VERSION, P } from './platform.js';
 import { openPromptsModal } from './prompts.js';
@@ -115,17 +116,18 @@ export function injectSidebarFoldersPanel(items) {
 
   const sortBtn = document.getElementById('gcm-sort-btn');
   if (sortBtn) {
-    sortBtn.textContent = state.sortMode === 'DEFAULT' ? t().sortRecent : state.sortMode === 'AZ' ? t().sortAZ : t().sortZA;
+    const sortLabel = state.sortMode === 'DEFAULT' ? t().sortRecent : state.sortMode === 'AZ' ? t().sortAZ : t().sortZA;
+    setButtonIconText(sortBtn, ICONS.sort, sortLabel);
   }
 
   const scrollBtn = document.getElementById('gcm-autoscroll-btn');
   if (scrollBtn) {
     if (state.autoScrollActive) {
       scrollBtn.classList.add('active');
-      scrollBtn.textContent = t().stopLoadBtn;
+      setButtonIconText(scrollBtn, ICONS.stop, t().stopLoadBtn);
     } else {
       scrollBtn.classList.remove('active');
-      scrollBtn.textContent = t().loadAllBtn;
+      setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
     }
   }
 }
@@ -319,20 +321,9 @@ function buildFoldersPanelDOM(box) {
   const title = document.createElement('span');
   title.style.display = 'inline-flex';
   title.style.alignItems = 'center';
-  title.style.gap = '6px';
+  title.style.gap = '7px';
 
-  if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.getURL === 'function') {
-    const iconImg = document.createElement('img');
-    iconImg.src = chrome.runtime.getURL('icons/icon32.png');
-    iconImg.width = 16;
-    iconImg.height = 16;
-    iconImg.style.borderRadius = '4px';
-    title.appendChild(iconImg);
-  } else {
-    const badgeIcon = document.createElement('span');
-    badgeIcon.textContent = '✨';
-    title.appendChild(badgeIcon);
-  }
+  title.appendChild(createIconElement(ICONS.chatfoldLogo));
 
   const titleText = document.createElement('span');
   titleText.textContent = `${t().panelTitle} v${APP_VERSION}`;
@@ -359,7 +350,7 @@ function buildFoldersPanelDOM(box) {
 
   const addBtn = document.createElement('button');
   addBtn.className = 'gcm-add-folder-btn';
-  addBtn.textContent = t().newFolderBtn;
+  setButtonIconText(addBtn, ICONS.folderPlus, t().newFolderBtn);
   addBtn.title = t().newFolderTitle;
   addBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -367,8 +358,8 @@ function buildFoldersPanelDOM(box) {
   });
 
   const minBtn = document.createElement('button');
-  minBtn.className = 'gcm-mini-btn';
-  minBtn.textContent = '—';
+  minBtn.className = 'gcm-mini-btn gcm-mini-icon-btn';
+  minBtn.appendChild(createIconElement(ICONS.minus));
   minBtn.title = t().toggleMinTitle;
   minBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -393,6 +384,9 @@ function buildFoldersPanelDOM(box) {
   const searchWrap = document.createElement('div');
   searchWrap.className = 'gcm-search-wrap';
 
+  const searchIcon = createIconElement(ICONS.search);
+  searchIcon.classList.add('gcm-search-lead-icon');
+
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.className = 'gcm-search-input';
@@ -402,7 +396,7 @@ function buildFoldersPanelDOM(box) {
   const clearBtn = document.createElement('button');
   clearBtn.type = 'button';
   clearBtn.className = 'gcm-search-clear';
-  clearBtn.textContent = '×';
+  clearBtn.appendChild(createIconElement(ICONS.close));
   clearBtn.title = t().searchClearTitle;
   clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
 
@@ -424,6 +418,7 @@ function buildFoldersPanelDOM(box) {
     searchInput.focus();
   });
 
+  searchWrap.appendChild(searchIcon);
   searchWrap.appendChild(searchInput);
   searchWrap.appendChild(clearBtn);
 
@@ -431,7 +426,7 @@ function buildFoldersPanelDOM(box) {
   sortBtn.id = 'gcm-sort-btn';
   sortBtn.className = 'gcm-sort-btn';
   sortBtn.title = t().sortTitle;
-  sortBtn.textContent = t().sortRecent;
+  setButtonIconText(sortBtn, ICONS.sort, t().sortRecent);
   sortBtn.addEventListener('click', () => {
     state.sortMode = state.sortMode === 'DEFAULT' ? 'AZ' : state.sortMode === 'AZ' ? 'ZA' : 'DEFAULT';
     saveView();
@@ -451,26 +446,26 @@ function buildFoldersPanelDOM(box) {
   const scrollBtn = document.createElement('button');
   scrollBtn.id = 'gcm-autoscroll-btn';
   scrollBtn.className = 'gcm-footer-btn';
-  scrollBtn.textContent = t().loadAllBtn;
+  setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
   scrollBtn.title = t().loadAllTitle;
   scrollBtn.addEventListener('click', toggleAutoScrollHistory);
 
   const backupBtn = document.createElement('button');
   backupBtn.className = 'gcm-footer-btn';
-  backupBtn.textContent = t().backupBtn;
+  setButtonIconText(backupBtn, ICONS.download, t().backupBtn);
   backupBtn.title = t().backupTitle;
   backupBtn.addEventListener('click', exportBackupConfig);
 
   const restoreBtn = document.createElement('button');
   restoreBtn.className = 'gcm-footer-btn';
-  restoreBtn.textContent = t().importBtn;
+  setButtonIconText(restoreBtn, ICONS.upload, t().importBtn);
   restoreBtn.title = t().importTitle;
   restoreBtn.addEventListener('click', importBackupConfig);
 
   const promptsBtn = document.createElement('button');
   promptsBtn.id = 'gcm-prompts-btn';
   promptsBtn.className = 'gcm-footer-btn';
-  promptsBtn.textContent = t().promptsBtn;
+  setButtonIconText(promptsBtn, ICONS.zap, t().promptsBtn);
   promptsBtn.title = t().promptsBtnTitle;
   promptsBtn.addEventListener('click', openPromptsModal);
 
@@ -494,7 +489,9 @@ function createFolderPill({ id, name, color, count, deletable, keywords }) {
     pill.title = `${t().autoRulesPrefix}: ${keywords.join(', ')}`;
   }
 
-  if (color) {
+  if (id === 'PROTECTED') {
+    pill.appendChild(createIconElement(ICONS.lockSmall));
+  } else if (color) {
     const dot = document.createElement('span');
     dot.className = 'gcm-folder-dot';
     dot.style.backgroundColor = color;

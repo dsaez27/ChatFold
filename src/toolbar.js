@@ -1,4 +1,5 @@
 import { deleteSelectedChats, stopDeletion } from './deletion.js';
+import { ICONS, createIconElement, setButtonIconText } from './icons.js';
 import { exportSelectedConversationsToMarkdown } from './markdown-export.js';
 import { toggleMoveToFolderPopover, toggleProtectSelected, toggleSelectAll } from './selection.js';
 import { saveView, selectedMap, state, t } from './state.js';
@@ -30,7 +31,7 @@ export function createToolbar() {
   folderBtn.id = 'gcm-folder-btn';
   folderBtn.className = 'gcm-btn gcm-btn-folder';
   folderBtn.disabled = true;
-  folderBtn.textContent = t().folderBtn(0);
+  setButtonIconText(folderBtn, ICONS.folder, t().folderBtn(0));
   folderBtn.title = t().folderBtnTitle;
   folderBtn.addEventListener('click', () => toggleMoveToFolderPopover(folderBtn));
 
@@ -38,14 +39,14 @@ export function createToolbar() {
   protectBtn.id = 'gcm-protect-btn';
   protectBtn.className = 'gcm-btn gcm-btn-neutral';
   protectBtn.disabled = true;
-  protectBtn.textContent = t().protectBtn;
+  setButtonIconText(protectBtn, ICONS.lock, t().protectBtn);
   protectBtn.title = t().protectBtnTitle;
   protectBtn.addEventListener('click', toggleProtectSelected);
 
   const exportBtn = document.createElement('button');
   exportBtn.id = 'gcm-export-btn';
   exportBtn.className = 'gcm-btn gcm-btn-neutral';
-  exportBtn.textContent = t().exportBtn;
+  setButtonIconText(exportBtn, ICONS.fileText, t().exportBtn);
   exportBtn.title = t().exportBtnTitle;
   exportBtn.addEventListener('click', exportSelectedConversationsToMarkdown);
 
@@ -53,14 +54,14 @@ export function createToolbar() {
   deleteBtn.id = 'gcm-delete-btn';
   deleteBtn.className = 'gcm-btn gcm-btn-danger';
   deleteBtn.disabled = true;
-  deleteBtn.textContent = t().deleteBtn(0);
+  setButtonIconText(deleteBtn, ICONS.trash, t().deleteBtn(0));
   deleteBtn.addEventListener('click', deleteSelectedChats);
 
   const stopBtn = document.createElement('button');
   stopBtn.id = 'gcm-stop-btn';
   stopBtn.className = 'gcm-btn gcm-btn-stop';
   stopBtn.style.display = 'none';
-  stopBtn.textContent = t().stopBtn;
+  setButtonIconText(stopBtn, ICONS.stop, t().stopBtn);
   stopBtn.addEventListener('click', stopDeletion);
 
   const collapseBtn = document.createElement('button');
@@ -90,7 +91,8 @@ function applyToolbarCollapsed() {
   const btn = document.getElementById('gcm-toolbar-toggle');
   if (!toolbar || !btn) return;
   toolbar.classList.toggle('gcm-collapsed', state.toolbarCollapsed);
-  btn.textContent = state.toolbarCollapsed ? '☰' : '›';
+  btn.textContent = '';
+  btn.appendChild(createIconElement(state.toolbarCollapsed ? ICONS.menu : ICONS.chevronRight));
   btn.title = state.toolbarCollapsed ? t().toolbarExpandTitle : t().toolbarCollapseTitle;
 }
 
@@ -140,7 +142,10 @@ export function updateToolbarState() {
     const count = selectedMap.size;
     folderBtn.disabled = count === 0;
     const fText = t().folderBtn(count);
-    if (folderBtn.textContent !== fText) folderBtn.textContent = fText;
+    if (folderBtn.dataset.label !== fText) {
+      folderBtn.dataset.label = fText;
+      setButtonIconText(folderBtn, ICONS.folder, fText);
+    }
 
     if (protectBtn) {
       protectBtn.disabled = count === 0;
@@ -148,6 +153,9 @@ export function updateToolbarState() {
 
     deleteBtn.disabled = count === 0;
     const dText = t().deleteBtn(count);
-    if (deleteBtn.textContent !== dText) deleteBtn.textContent = dText;
+    if (deleteBtn.dataset.label !== dText) {
+      deleteBtn.dataset.label = dText;
+      setButtonIconText(deleteBtn, ICONS.trash, dText);
+    }
   }
 }
