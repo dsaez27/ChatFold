@@ -130,7 +130,7 @@
   }
 }
 
-/* Barra flotante superior (Píldora Acrílica) */
+/* Barra flotante superior (Píldora Acrílica Horizontal / Vertical Arrastrable) */
 #gcm-toolbar {
   position: fixed !important;
   top: 12px !important;
@@ -148,7 +148,25 @@
   box-shadow: var(--gcm-shadow-toolbar) !important;
   font-family: 'Google Sans', 'Segoe UI Variable Display', system-ui, sans-serif !important;
   color: var(--gcm-text-primary) !important;
+  cursor: grab !important;
+  user-select: none !important;
+  touch-action: none !important;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease !important;
+}
+
+#gcm-toolbar.gcm-dragging,
+#gcm-toolbar.gcm-dragging * {
+  cursor: grabbing !important;
+}
+
+#gcm-toolbar.gcm-dragging {
+  transition: none !important;
+}
+
+.gcm-toolbar-head {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }
 
 .gcm-toolbar-toggle {
@@ -173,10 +191,40 @@
 
 #gcm-toolbar.gcm-collapsed {
   padding: 6px !important;
+  border-radius: 999px !important;
 }
 
-#gcm-toolbar.gcm-collapsed > :not(.gcm-toolbar-toggle) {
+#gcm-toolbar.gcm-collapsed > :not(.gcm-toolbar-head),
+#gcm-toolbar.gcm-collapsed .gcm-toolbar-orient {
   display: none !important;
+}
+
+#gcm-toolbar.gcm-vertical {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  border-radius: 20px !important;
+  padding: 10px !important;
+  gap: 7px !important;
+  min-width: 148px !important;
+}
+
+#gcm-toolbar.gcm-vertical .gcm-toolbar-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding-bottom: 5px !important;
+  border-bottom: 1px solid var(--gcm-panel-footer-border) !important;
+}
+
+#gcm-toolbar.gcm-vertical .gcm-select-all-wrap {
+  justify-content: flex-start !important;
+  padding: 5px 10px !important;
+}
+
+#gcm-toolbar.gcm-vertical .gcm-btn {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  justify-content: flex-start !important;
+  padding: 0 12px !important;
 }
 
 #gcm-toolbar:hover {

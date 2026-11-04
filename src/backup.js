@@ -5,8 +5,8 @@ import { autoClassifiedVisited, selectedMap, state, t } from './state.js';
 import { saveFolderData } from './storage.js';
 
 export function exportBackupConfig() {
-  // La posición del panel y la vista actual son locales: no van en el respaldo.
-  const { pos: _pos, view: _view, ...backupData } = state.folderState;
+  // La posición del panel/barra y la vista actual son locales: no van en el respaldo.
+  const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...backupData } = state.folderState;
   const dataStr = JSON.stringify(backupData, null, 2);
   const blob = new Blob([dataStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -63,7 +63,13 @@ export function importBackupConfig() {
             protectedIds: sanitizeMap(parsed.protectedIds, (v) => (v ? true : undefined)),
             minimized: !!parsed.minimized,
             pos: state.folderState.pos || null, // la posición del panel es local a esta pantalla
-            view: { filter: 'ALL', sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed }
+            toolbarPos: state.folderState.toolbarPos || null,
+            view: {
+              filter: 'ALL',
+              sort: state.sortMode,
+              toolbarCollapsed: state.toolbarCollapsed,
+              toolbarVertical: state.toolbarVertical
+            }
           };
           state.activeFolderFilter = 'ALL';
           autoClassifiedVisited.clear();

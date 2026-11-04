@@ -22,6 +22,7 @@ export const state = {
   searchQuery: '',
   sortMode: folderState.view.sort,
   toolbarCollapsed: folderState.view.toolbarCollapsed,
+  toolbarVertical: !!folderState.view.toolbarVertical,
 
   autoScrollActive: false,
   autoScrollRunId: 0,
@@ -33,6 +34,7 @@ export const state = {
   cachedSidebarEl: null,
   cachedChatGptToken: null,
   panelJustDragged: false,
+  toolbarJustDragged: false,
   toastTimer: null,
   isRefreshing: false,
   refreshDebounceTimer: null
@@ -47,12 +49,13 @@ export const autoClassifiedVisited = new Set();
 /** Textos del idioma activo. */
 export const t = () => I18N[state.folderState.lang] || I18N.es;
 
-/** Guarda la vista actual (filtro, orden y barra contraída) para retomarla al recargar. */
+/** Guarda la vista actual (filtro, orden y barra contraída/vertical) para retomarla al recargar. */
 export function saveView() {
   state.folderState.view = {
     filter: state.activeFolderFilter,
     sort: state.sortMode,
-    toolbarCollapsed: state.toolbarCollapsed
+    toolbarCollapsed: state.toolbarCollapsed,
+    toolbarVertical: state.toolbarVertical
   };
   saveFolderData(state.folderState);
 }

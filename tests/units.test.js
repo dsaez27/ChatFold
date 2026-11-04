@@ -30,12 +30,14 @@ test('normalizeStoredState descarta datos corruptos y aplica valores por defecto
   assert.equal(s.prompts.length, 3);
   assert.deepEqual(s.assignments, {});
   assert.equal(s.pos, null);
-  assert.deepEqual(s.view, { filter: 'ALL', sort: 'DEFAULT', toolbarCollapsed: false });
+  assert.equal(s.toolbarPos, null);
+  assert.deepEqual(s.view, { filter: 'ALL', sort: 'DEFAULT', toolbarCollapsed: false, toolbarVertical: false });
 });
 
 test('normalizeStoredState conserva una vista válida', () => {
-  const s = normalizeStoredState({ view: { filter: 'PROTECTED', sort: 'AZ', toolbarCollapsed: true } }, 'en');
-  assert.deepEqual(s.view, { filter: 'PROTECTED', sort: 'AZ', toolbarCollapsed: true });
+  const s = normalizeStoredState({ toolbarPos: { left: 120, top: 24 }, view: { filter: 'PROTECTED', sort: 'AZ', toolbarCollapsed: true, toolbarVertical: true } }, 'en');
+  assert.deepEqual(s.toolbarPos, { left: 120, top: 24 });
+  assert.deepEqual(s.view, { filter: 'PROTECTED', sort: 'AZ', toolbarCollapsed: true, toolbarVertical: true });
 });
 
 test('sanitizeMap bloquea claves peligrosas, arrays y valores inválidos', () => {

@@ -154,6 +154,18 @@
     plus: () => strokeSvg(13.5, 2.3, [
       el("path", { d: "M5 12h14" }),
       el("path", { d: "M12 5v14" })
+    ]),
+    layoutVertical: () => strokeSvg(13.5, 2.1, [
+      el("rect", { width: 10, height: 18, x: 7, y: 3, rx: 2 }),
+      el("path", { d: "M10 7h4" }),
+      el("path", { d: "M10 12h4" }),
+      el("path", { d: "M10 17h4" })
+    ]),
+    layoutHorizontal: () => strokeSvg(13.5, 2.1, [
+      el("rect", { width: 18, height: 10, x: 3, y: 7, rx: 2 }),
+      el("path", { d: "M7 10v4" }),
+      el("path", { d: "M12 10v4" }),
+      el("path", { d: "M17 10v4" })
     ])
   };
   function createIconElement(iconBuilder) {
@@ -222,11 +234,11 @@
       name: "ChatGPT",
       storageKey: "gcm_chatgpt_folders_data_v1",
       legacyStorageKey: null,
-      convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{5,})/,
+      convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{4,})/,
       buildUrl: (id) => id.startsWith("task_") ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`,
       selectors: {
         sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
-        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/task_"]',
+        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"]',
         rowClosest: [
           "[data-sidebar-chatgpt-conversation-key]",
           'li[data-testid^="history-item"]',
@@ -313,8 +325,10 @@
     es: {
       panelTitle: "ChatFold",
       toggleMinTitle: "Clic para minimizar/expandir",
-      toolbarCollapseTitle: "Contraer barra superior",
-      toolbarExpandTitle: "Expandir barra superior",
+      toolbarCollapseTitle: "Contraer barra superior (Arrastra para mover)",
+      toolbarExpandTitle: "Expandir barra superior (Arrastra para mover)",
+      toolbarVerticalTitle: "Cambiar a barra vertical (Arrastra para mover)",
+      toolbarHorizontalTitle: "Cambiar a barra horizontal (Arrastra para mover)",
       langBtnTitle: "Switch language (Español / English)",
       newFolderBtn: "Nueva",
       newFolderTitle: "Crear nueva carpeta con palabras clave automáticas",
@@ -420,8 +434,10 @@
     en: {
       panelTitle: "ChatFold",
       toggleMinTitle: "Click to minimize/expand",
-      toolbarCollapseTitle: "Collapse top bar",
-      toolbarExpandTitle: "Expand top bar",
+      toolbarCollapseTitle: "Collapse top bar (Drag to move)",
+      toolbarExpandTitle: "Expand top bar (Drag to move)",
+      toolbarVerticalTitle: "Switch to vertical bar (Drag to move)",
+      toolbarHorizontalTitle: "Switch to horizontal bar (Drag to move)",
       langBtnTitle: "Cambiar idioma (English / Español)",
       newFolderBtn: "New",
       newFolderTitle: "Create a new smart folder with auto-keywords",
@@ -552,11 +568,13 @@
       protectedIds: isPlainObj(parsed.protectedIds) ? parsed.protectedIds : {},
       minimized: !!parsed.minimized,
       pos: parsed.pos && Number.isFinite(parsed.pos.left) && Number.isFinite(parsed.pos.bottom) ? { left: parsed.pos.left, bottom: parsed.pos.bottom } : null,
-      // Última vista usada (filtro y orden) para retomarla tras recargar la página.
+      toolbarPos: parsed.toolbarPos && Number.isFinite(parsed.toolbarPos.left) && Number.isFinite(parsed.toolbarPos.top) ? { left: parsed.toolbarPos.left, top: parsed.toolbarPos.top } : null,
+      // Última vista usada (filtro, orden y disposición de la barra) para retomarla tras recargar la página.
       view: {
         filter: typeof parsed.view?.filter === "string" ? parsed.view.filter : "ALL",
         sort: ["DEFAULT", "AZ", "ZA"].includes(parsed.view?.sort) ? parsed.view.sort : "DEFAULT",
-        toolbarCollapsed: !!parsed.view?.toolbarCollapsed
+        toolbarCollapsed: !!parsed.view?.toolbarCollapsed,
+        toolbarVertical: !!parsed.view?.toolbarVertical
       }
     };
   }
@@ -577,7 +595,8 @@
       protectedIds: {},
       minimized: false,
       pos: null,
-      view: { filter: "ALL", sort: "DEFAULT", toolbarCollapsed: false }
+      toolbarPos: null,
+      view: { filter: "ALL", sort: "DEFAULT", toolbarCollapsed: false, toolbarVertical: false }
     };
     saveFolderData(initial);
     return initial;
@@ -589,7 +608,7 @@
     }
     try {
       if (typeof chrome !== "undefined" && chrome.storage?.sync?.set) {
-        const { pos: _pos, view: _view, ...syncPayload } = data;
+        const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...syncPayload } = data;
         chrome.storage.sync.set({ [P.storageKey]: syncPayload });
       }
     } catch (_) {
@@ -604,13 +623,13 @@
           const current = getState();
           if (cloudData && typeof cloudData === "object") {
             const merged = normalizeStoredState(
-              { ...cloudData, pos: current.pos, view: current.view },
+              { ...cloudData, pos: current.pos, toolbarPos: current.toolbarPos, view: current.view },
               current.lang
             );
             localStorage.setItem(P.storageKey, JSON.stringify(merged));
             applyIncoming(merged);
           } else {
-            const { pos: _pos, view: _view, ...syncPayload } = current;
+            const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...syncPayload } = current;
             chrome.storage.sync.set({ [P.storageKey]: syncPayload });
           }
         } catch (_) {
@@ -622,7 +641,7 @@
           try {
             const current = getState();
             const merged = normalizeStoredState(
-              { ...changes[P.storageKey].newValue, pos: current.pos, view: current.view },
+              { ...changes[P.storageKey].newValue, pos: current.pos, toolbarPos: current.toolbarPos, view: current.view },
               current.lang
             );
             localStorage.setItem(P.storageKey, JSON.stringify(merged));
@@ -646,6 +665,7 @@
     searchQuery: "",
     sortMode: folderState.view.sort,
     toolbarCollapsed: folderState.view.toolbarCollapsed,
+    toolbarVertical: !!folderState.view.toolbarVertical,
     autoScrollActive: false,
     autoScrollRunId: 0,
     deletionInProgress: false,
@@ -654,6 +674,7 @@
     cachedSidebarEl: null,
     cachedChatGptToken: null,
     panelJustDragged: false,
+    toolbarJustDragged: false,
     toastTimer: null,
     isRefreshing: false,
     refreshDebounceTimer: null
@@ -665,7 +686,8 @@
     state.folderState.view = {
       filter: state.activeFolderFilter,
       sort: state.sortMode,
-      toolbarCollapsed: state.toolbarCollapsed
+      toolbarCollapsed: state.toolbarCollapsed,
+      toolbarVertical: state.toolbarVertical
     };
     saveFolderData(state.folderState);
   }
@@ -700,6 +722,11 @@
         return id;
       } catch (_) {
       }
+    }
+    const keyHolder = el2.closest?.("[data-sidebar-chatgpt-conversation-key]");
+    if (keyHolder) {
+      const key = keyHolder.getAttribute("data-sidebar-chatgpt-conversation-key");
+      if (key) return key;
     }
     return null;
   }
@@ -758,19 +785,22 @@
   }
   function getConversationRows() {
     const sidebar = getSidebarElement();
-    const root = sidebar || (PLATFORM_KEY !== "gemini" ? document : null);
+    const root = PLATFORM_KEY === "chatgpt" ? document : sidebar || (PLATFORM_KEY !== "gemini" ? document : null);
     if (!root) return [];
     const candidates = root.querySelectorAll(SELECTORS.conversationLinks);
     const rows = [];
     const seenRows = /* @__PURE__ */ new Set();
+    const seenIds = /* @__PURE__ */ new Set();
     for (let i = 0; i < candidates.length; i++) {
       const el2 = candidates[i];
       if (PLATFORM_KEY !== "gemini" && el2.closest("main")) continue;
+      if (el2.closest('[id^="gcm-"]')) continue;
       const id = parseConvId(el2);
-      if (!id) continue;
+      if (!id || seenIds.has(id)) continue;
       const row = findRowContainer(el2);
       if (!seenRows.has(row)) {
         seenRows.add(row);
+        seenIds.add(id);
         rows.push({
           id,
           row,
@@ -1218,7 +1248,7 @@
 
   // src/backup.js
   function exportBackupConfig() {
-    const { pos: _pos, view: _view, ...backupData } = state.folderState;
+    const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...backupData } = state.folderState;
     const dataStr = JSON.stringify(backupData, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1267,7 +1297,13 @@
               minimized: !!parsed.minimized,
               pos: state.folderState.pos || null,
               // la posición del panel es local a esta pantalla
-              view: { filter: "ALL", sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed }
+              toolbarPos: state.folderState.toolbarPos || null,
+              view: {
+                filter: "ALL",
+                sort: state.sortMode,
+                toolbarCollapsed: state.toolbarCollapsed,
+                toolbarVertical: state.toolbarVertical
+              }
             };
             state.activeFolderFilter = "ALL";
             autoClassifiedVisited.clear();
@@ -1451,6 +1487,1015 @@ ${text}` : text;
     card.appendChild(actions);
     overlay.appendChild(card);
     document.body.appendChild(overlay);
+  }
+
+  // src/deletion.js
+  function isPinOrArchiveButton(btn, allowArchive = false) {
+    if (!btn) return true;
+    const label = ((btn.getAttribute?.("aria-label") || "") + " " + (btn.getAttribute?.("title") || "") + " " + (btn.getAttribute?.("data-testid") || "")).toLowerCase();
+    if (allowArchive && label.includes("archiv")) {
+      return false;
+    }
+    return label.includes("fijar") || label.includes("desfijar") || label.includes("pin") || label.includes("unpin") || label.includes("archiv");
+  }
+  function isRemoteTask(targetId, link) {
+    if (typeof targetId === "string" && targetId.startsWith("task_")) return true;
+    const href = link?.getAttribute?.("href") || "";
+    return href.includes("/codex/tasks/") || href.includes("/tasks/");
+  }
+  function findOptionsTrigger(row, link, isTask = false) {
+    const targets = [row, link, row.parentElement].filter(Boolean);
+    for (const tEl of targets) {
+      tEl.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
+      tEl.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
+      tEl.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      tEl.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    }
+    const countConvLinks = (el2) => el2.querySelectorAll(CONV_LINK_SELECTOR).length;
+    const scopes = [];
+    scopes.push(row);
+    if (row.parentElement && row.parentElement !== document.body && countConvLinks(row.parentElement) <= 1) {
+      scopes.push(row.parentElement);
+    }
+    if (row.nextElementSibling && countConvLinks(row.nextElementSibling) === 0) {
+      scopes.push(row.nextElementSibling);
+    }
+    const allowArchiveBtn = isTask || PLATFORM_KEY === "chatgpt";
+    const prioritySelectors = PLATFORM_KEY === "chatgpt" ? [
+      'button[data-testid^="history-item-"][data-testid$="-options"]',
+      'button[data-testid*="options"]',
+      'button[aria-haspopup="menu"]',
+      "button[data-trailing-button]",
+      'button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',
+      'button[aria-label*="rchiv"], button[title*="rchiv"], button[data-testid*="archive"]',
+      "button:not(.gcm-checkbox)"
+    ] : [SELECTORS.optionsTrigger];
+    for (const sel of prioritySelectors) {
+      for (const scope of scopes) {
+        const candidates = Array.from(scope.querySelectorAll(sel));
+        const valid = candidates.find((b) => !b.classList?.contains("gcm-checkbox") && !isPinOrArchiveButton(b, allowArchiveBtn));
+        if (valid) return valid;
+      }
+    }
+    return null;
+  }
+  function removeDeletedRowFromDOM(row, targetId) {
+    if (!row && targetId) {
+      const found = findRowById(targetId);
+      row = found?.row;
+    }
+    if (!row) return;
+    let containerToRemove = row;
+    const parentLi = row.closest("li");
+    if (parentLi && isSingleRowContainer(parentLi)) {
+      containerToRemove = parentLi;
+    } else if (row.parentElement && row.parentElement !== document.body && row.parentElement.tagName === "DIV" && isSingleRowContainer(row.parentElement) && (row.parentElement.classList.contains("group") || row.parentElement.hasAttribute("data-sidebar-chatgpt-conversation-key") || (row.parentElement.getAttribute("data-testid") || "").startsWith("history-item"))) {
+      containerToRemove = row.parentElement;
+    }
+    const parentList = containerToRemove.parentElement;
+    containerToRemove.remove();
+    if (parentList && (parentList.tagName === "OL" || parentList.tagName === "UL")) {
+      if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
+        const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
+        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
+          sectionWrapper.remove();
+        }
+      }
+    }
+  }
+  function cleanupEmptySidebarItems() {
+    const sidebar = getSidebarElement() || document;
+    const lis = sidebar.querySelectorAll("li");
+    lis.forEach((li) => {
+      if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
+        li.remove();
+      }
+    });
+    const lists = sidebar.querySelectorAll("ol, ul");
+    lists.forEach((list) => {
+      if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
+        const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
+        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
+          sectionWrapper.remove();
+        }
+      }
+    });
+  }
+  function checkRedirectIfActiveChatDeleted(deletedIds) {
+    if (PLATFORM_KEY !== "chatgpt" || !Array.isArray(deletedIds) || deletedIds.length === 0) return;
+    const currentPath = location.pathname;
+    const isCurrentDeleted = deletedIds.some((id) => currentPath.includes(id));
+    if (isCurrentDeleted) {
+      const newChatBtn = document.querySelector('[data-testid="create-new-chat-button"], [data-testid="new-chat-button"], a[href="/"]');
+      if (newChatBtn) {
+        realClick(newChatBtn);
+      } else {
+        location.href = "/";
+      }
+    }
+  }
+  async function getChatGptToken(forceRefresh = false) {
+    if (forceRefresh) state.cachedChatGptToken = null;
+    if (!state.cachedChatGptToken) {
+      const sessRes = await fetch("/api/auth/session", { credentials: "include" });
+      if (sessRes.ok) {
+        const sessData = await sessRes.json();
+        state.cachedChatGptToken = sessData?.accessToken || null;
+      }
+    }
+    return state.cachedChatGptToken;
+  }
+  function getCookieValue(name) {
+    try {
+      const m = (document.cookie || "").match(new RegExp("(?:^|;\\s*)" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[1]) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function buildChatGptHeaders(token, includeAccount = true) {
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    };
+    if (includeAccount) {
+      const accountId = getCookieValue("_account");
+      if (accountId && accountId !== "personal") {
+        headers["ChatGPT-Account-Id"] = accountId;
+      }
+    }
+    const deviceId = getCookieValue("oai-did") || typeof localStorage !== "undefined" && localStorage.getItem?.("oai-did");
+    if (deviceId) {
+      headers["OAI-Device-Id"] = deviceId;
+    }
+    if (typeof navigator !== "undefined" && navigator.language) {
+      headers["OAI-Language"] = navigator.language;
+    }
+    return headers;
+  }
+  async function hideChatGptConversation(targetId, token) {
+    const headers = buildChatGptHeaders(token, true);
+    let lastRes = await fetch(`/backend-api/conversation/${targetId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers,
+      body: JSON.stringify({ is_visible: false })
+    });
+    if (lastRes.ok || lastRes.status === 401) return lastRes;
+    if (headers["ChatGPT-Account-Id"]) {
+      const personalRes = await fetch(`/backend-api/conversation/${targetId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: buildChatGptHeaders(token, false),
+        body: JSON.stringify({ is_visible: false })
+      });
+      if (personalRes.ok || personalRes.status === 401) return personalRes;
+      lastRes = personalRes;
+    }
+    try {
+      const delRes = await fetch(`/backend-api/conversation/${targetId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers
+      });
+      if (delRes.ok) return delRes;
+    } catch (_) {
+    }
+    try {
+      const archRes = await fetch(`/backend-api/conversation/${targetId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ is_archived: true })
+      });
+      if (archRes.ok) return archRes;
+    } catch (_) {
+    }
+    return lastRes;
+  }
+  async function deleteOrArchiveRemoteTaskApi(targetId, token) {
+    const headers = buildChatGptHeaders(token, true);
+    try {
+      const delRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers
+      });
+      if (delRes.ok || delRes.status === 401) return delRes;
+    } catch (_) {
+    }
+    try {
+      const archRes = await fetch(`/backend-api/wham/tasks/${targetId}/archive`, {
+        method: "POST",
+        credentials: "include",
+        headers
+      });
+      if (archRes.ok) {
+        try {
+          await fetch(`/backend-api/wham/tasks/${targetId}`, {
+            method: "DELETE",
+            credentials: "include",
+            headers
+          });
+        } catch (_) {
+        }
+        return archRes;
+      }
+      if (archRes.status === 401) return archRes;
+    } catch (_) {
+    }
+    try {
+      const patchRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ archived: true, is_archived: true, is_visible: false })
+      });
+      if (patchRes.ok || patchRes.status === 401) return patchRes;
+    } catch (_) {
+    }
+    return fetch(`/backend-api/tasks/${targetId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers
+    });
+  }
+  async function deleteChatGptViaApi(targetId, row, isTask = false) {
+    if (PLATFORM_KEY !== "chatgpt" || typeof fetch !== "function") return false;
+    try {
+      let token = await getChatGptToken();
+      if (!token) return false;
+      const runPrimary = (tk) => isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
+      const runSecondary = (tk) => isTask ? hideChatGptConversation(targetId, tk) : deleteOrArchiveRemoteTaskApi(targetId, tk);
+      let res = await runPrimary(token);
+      if (res.status === 401) {
+        token = await getChatGptToken(true);
+        if (!token) return false;
+        res = await runPrimary(token);
+      }
+      if (!res.ok) {
+        const secRes = await runSecondary(token);
+        if (secRes?.ok) res = secRes;
+      }
+      if (res.ok) {
+        removeDeletedRowFromDOM(row, targetId);
+        cleanupEmptySidebarItems();
+        await sleep(160);
+        return true;
+      }
+    } catch (_) {
+    }
+    return false;
+  }
+  async function deleteSingleConversation(targetId) {
+    const found = findRowById(targetId);
+    const row = found?.row || null;
+    const link = found?.link || null;
+    const isTask = isRemoteTask(targetId, link);
+    if (PLATFORM_KEY === "chatgpt") {
+      const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
+      if (apiOk) return true;
+    }
+    if (!found) return false;
+    row.scrollIntoView({ block: "center" });
+    await sleep(180);
+    try {
+      const trigger = await pollUntil(() => findOptionsTrigger(row, link, isTask), 1200, 80);
+      if (!trigger) {
+        throw new Error("Options menu button not found.");
+      }
+      const triggerLabel = ((trigger.getAttribute?.("aria-label") || "") + " " + (trigger.getAttribute?.("title") || "") + " " + (trigger.getAttribute?.("data-testid") || "")).toLowerCase();
+      const isDirectArchiveBtn = triggerLabel.includes("archiv") && !trigger.getAttribute?.("aria-haspopup");
+      realClick(trigger);
+      if (isDirectArchiveBtn) {
+        await sleep(450);
+        removeDeletedRowFromDOM(row, targetId);
+        cleanupEmptySidebarItems();
+        return true;
+      }
+      const menu = await pollUntil(
+        () => Array.from(document.querySelectorAll(SELECTORS.menuPanel)).find(isActiveOverlay),
+        2200
+      );
+      if (!menu) {
+        if (isTask || PLATFORM_KEY === "chatgpt") {
+          await sleep(450);
+          if (!row.isConnected) {
+            cleanupEmptySidebarItems();
+            return true;
+          }
+          if (isTask) {
+            removeDeletedRowFromDOM(row, targetId);
+            cleanupEmptySidebarItems();
+            return true;
+          }
+        }
+        throw new Error("Menu did not open.");
+      }
+      await sleep(180);
+      const menuItems = Array.from(menu.querySelectorAll(SELECTORS.deleteMenuItem));
+      const allowArchiveMenu = isTask || PLATFORM_KEY === "chatgpt";
+      let deleteBtn = menuItems.find((el2) => {
+        const txt = (el2.textContent || "").toLowerCase();
+        const testId = (el2.getAttribute("data-testid") || "").toLowerCase();
+        const cls = typeof el2.className === "string" ? el2.className.toLowerCase() : "";
+        return testId.includes("delete") || cls.includes("text-danger") || cls.includes("text-token-text-error") || cls.includes("text-red") || txt.includes("eliminar") || txt.includes("delete") || txt.includes("borrar") || el2.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]');
+      });
+      if (!deleteBtn && allowArchiveMenu) {
+        deleteBtn = menuItems.find((el2) => {
+          const txt = (el2.textContent || "").toLowerCase();
+          const testId = (el2.getAttribute("data-testid") || "").toLowerCase();
+          return testId.includes("archive") || txt.includes("archivar") || txt.includes("archive");
+        });
+      }
+      if (!deleteBtn) {
+        throw new Error("Delete option not found.");
+      }
+      const isArchiveAction = allowArchiveMenu && ((deleteBtn.textContent || "").toLowerCase().includes("archiv") || (deleteBtn.getAttribute("data-testid") || "").toLowerCase().includes("archive"));
+      realClick(deleteBtn);
+      const dialog = await pollUntil(
+        () => Array.from(document.querySelectorAll(SELECTORS.confirmDialog)).find(isActiveOverlay),
+        isArchiveAction ? 1e3 : 2200
+      );
+      if (!dialog) {
+        if (isArchiveAction) {
+          await sleep(450);
+          removeDeletedRowFromDOM(row, targetId);
+          cleanupEmptySidebarItems();
+          return true;
+        }
+        throw new Error("Confirm dialog did not appear.");
+      }
+      await sleep(200);
+      let confirmBtn = dialog.querySelector(SELECTORS.confirmButton);
+      if (!confirmBtn) {
+        const dialogBtns = Array.from(dialog.querySelectorAll("button"));
+        confirmBtn = dialogBtns.find((b) => {
+          const txt = (b.textContent || "").trim().toLowerCase();
+          return txt === "eliminar" || txt === "delete" || txt === "borrar" || isTask && (txt.includes("archivar") || txt.includes("archive") || txt.includes("detener") || txt.includes("stop"));
+        });
+        if (!confirmBtn && dialogBtns.length === 2) confirmBtn = dialogBtns[1];
+      }
+      if (!confirmBtn) {
+        throw new Error("Confirm button not found.");
+      }
+      realClick(confirmBtn);
+      await pollUntil(() => !isActiveOverlay(dialog), 4e3);
+      await sleep(PLATFORM_KEY === "chatgpt" ? 650 : 550);
+      removeDeletedRowFromDOM(row, targetId);
+      cleanupEmptySidebarItems();
+      return true;
+    } catch (domErr) {
+      if (PLATFORM_KEY === "chatgpt") {
+        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
+        if (apiOk) {
+          removeDeletedRowFromDOM(row, targetId);
+          cleanupEmptySidebarItems();
+          return true;
+        }
+      }
+      throw domErr;
+    }
+  }
+  async function deleteSelectedChats() {
+    const allSelectedIds = Array.from(selectedMap.keys());
+    if (allSelectedIds.length === 0 || state.deletionInProgress) return;
+    const queueIds = allSelectedIds.filter((id) => !state.folderState.protectedIds[id]);
+    const skippedProtected = allSelectedIds.length - queueIds.length;
+    if (queueIds.length === 0) {
+      updateStatusToast(t().toastAllProtected, null, null, 3500);
+      return;
+    }
+    const confirmed = await showConfirmModal(queueIds.length, skippedProtected);
+    if (!confirmed) return;
+    state.deletionInProgress = true;
+    state.deletionStopRequested = false;
+    document.body.classList.add("gcm-stealth-delete");
+    updateToolbarState();
+    const total = queueIds.length;
+    let deletedCount = 0;
+    let errorCount = 0;
+    try {
+      for (let i = 0; i < queueIds.length; i++) {
+        if (state.deletionStopRequested) break;
+        const id = queueIds[i];
+        updateStatusToast(t().toastDeletingProgress(i + 1, total), i, total);
+        try {
+          const ok = await deleteSingleConversation(id);
+          if (ok) {
+            deletedCount++;
+            selectedMap.delete(id);
+            if (state.folderState.assignments[id]) {
+              delete state.folderState.assignments[id];
+              saveFolderData(state.folderState);
+            }
+          } else {
+            errorCount++;
+          }
+        } catch (err) {
+          console.warn("[ChatFold] Error deleting conversation:", err);
+          errorCount++;
+          document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+          await sleep(400);
+        }
+      }
+    } finally {
+      document.body.classList.remove("gcm-stealth-delete");
+      state.deletionInProgress = false;
+      state.deletionStopRequested = false;
+    }
+    const selectAllCb = document.getElementById("gcm-select-all");
+    if (selectAllCb) selectAllCb.checked = false;
+    cleanupEmptySidebarItems();
+    refreshUI();
+    checkRedirectIfActiveChatDeleted(queueIds.slice(0, deletedCount));
+    const summary = errorCount > 0 ? t().toastDeleteFinishedErr(deletedCount, errorCount) : t().toastDeleteSuccess(deletedCount);
+    updateStatusToast(summary, total, total, 4500);
+  }
+  function stopDeletion() {
+    state.deletionStopRequested = true;
+    updateStatusToast(t().toastStopping, null, null, 2500);
+  }
+
+  // src/markdown-export.js
+  function exportSelectedConversationsToMarkdown() {
+    const items = getConversationRows();
+    const selectedIds = Array.from(selectedMap.keys());
+    const folderLookup = new Map(state.folderState.folders.map((f) => [f.id, f.name]));
+    let markdown = `# ${t().mdHeader}
+`;
+    markdown += `${t().mdDate}: ${(/* @__PURE__ */ new Date()).toLocaleString()}
+
+`;
+    const allMessages = Array.from(document.querySelectorAll(SELECTORS.activeMessages));
+    const messages = allMessages.filter((m) => !allMessages.some((o) => o !== m && o.contains(m)));
+    if (selectedIds.length > 0) {
+      markdown += `## ${t().mdSelectedIndex(selectedIds.length)}
+
+`;
+      selectedIds.forEach((id, idx) => {
+        const rowObj = items.find((it) => it.id === id);
+        const title = (rowObj?.title || id).replace(/[[\]\r\n]/g, " ").trim();
+        const folderName = folderLookup.get(state.folderState.assignments[id]) || t().pillUnassigned;
+        const isLocked = state.folderState.protectedIds[id] ? " 🔒" : "";
+        markdown += `${idx + 1}. **[${title}](${P.buildUrl(id)})** — *${t().mdFolderLabel}: ${folderName}*${isLocked}
+`;
+      });
+      markdown += `
+---
+
+`;
+    }
+    if (messages.length > 0) {
+      markdown += `## ${t().mdActiveChatHeader}
+
+`;
+      messages.forEach((msg) => {
+        const text = (msg.innerText || msg.textContent || "").trim();
+        if (!text) return;
+        const isUser = msg.getAttribute?.("data-message-author-role") === "user" || msg.tagName.toLowerCase().includes("user") || msg.classList.contains("query-text") || !!msg.querySelector?.('[data-message-author-role="user"]');
+        markdown += `### ${isUser ? t().mdUser : `✨ ${P.name}`}
+
+${text}
+
+---
+
+`;
+      });
+    }
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${PLATFORM_KEY}-export-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    updateStatusToast(t().toastMdExported, null, null, 3e3);
+  }
+
+  // src/selection.js
+  function toggleProtectSelected() {
+    const ids = Array.from(selectedMap.keys());
+    if (ids.length === 0) return;
+    const allAlreadyProtected = ids.every((id) => !!state.folderState.protectedIds[id]);
+    ids.forEach((id) => {
+      if (allAlreadyProtected) {
+        delete state.folderState.protectedIds[id];
+      } else {
+        state.folderState.protectedIds[id] = true;
+      }
+    });
+    saveFolderData(state.folderState);
+    clearAllSelections();
+    refreshUI();
+    updateStatusToast(
+      allAlreadyProtected ? t().toastUnprotected(ids.length) : t().toastProtected(ids.length),
+      null,
+      null,
+      3e3
+    );
+  }
+  function clearAllSelections() {
+    selectedMap.clear();
+    const sidebar = getSidebarElement() || document;
+    sidebar.querySelectorAll(".gcm-checkbox").forEach((cb) => {
+      cb.checked = false;
+      cb.classList.remove("gcm-checked");
+    });
+    sidebar.querySelectorAll(".gcm-chat-row.gcm-selected").forEach((r) => r.classList.remove("gcm-selected"));
+    const selectAllCb = document.getElementById("gcm-select-all");
+    if (selectAllCb) {
+      selectAllCb.checked = false;
+      selectAllCb.classList.remove("gcm-checked");
+    }
+  }
+  function toggleMoveToFolderPopover(anchorBtn) {
+    const existing = document.getElementById("gcm-folder-popover");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const rect = anchorBtn.getBoundingClientRect();
+    const popover = document.createElement("div");
+    popover.id = "gcm-folder-popover";
+    popover.style.top = `${rect.bottom + 8}px`;
+    popover.style.left = `${Math.max(12, rect.left - 30)}px`;
+    state.folderState.folders.forEach((f) => {
+      const item = document.createElement("button");
+      item.className = "gcm-popover-item";
+      const dot = document.createElement("span");
+      dot.className = "gcm-folder-dot";
+      dot.style.backgroundColor = f.color;
+      dot.style.color = f.color;
+      const txt = document.createElement("span");
+      txt.textContent = f.name;
+      item.appendChild(dot);
+      item.appendChild(txt);
+      item.addEventListener("click", () => {
+        assignSelectedToFolder(f.id);
+        popover.remove();
+      });
+      popover.appendChild(item);
+    });
+    const divider = document.createElement("div");
+    divider.className = "gcm-popover-divider";
+    popover.appendChild(divider);
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "gcm-popover-item";
+    setButtonIconText(removeBtn, ICONS.folderMinus, t().removeFromFolder);
+    removeBtn.addEventListener("click", () => {
+      assignSelectedToFolder(null);
+      popover.remove();
+    });
+    popover.appendChild(removeBtn);
+    const createNewBtn = document.createElement("button");
+    createNewBtn.className = "gcm-popover-item";
+    createNewBtn.style.color = "#a8c7fa";
+    setButtonIconText(createNewBtn, ICONS.folderPlus, t().createNewFolderMenu);
+    createNewBtn.addEventListener("click", () => {
+      popover.remove();
+      openCreateFolderModal((newFolder) => {
+        assignSelectedToFolder(newFolder.id);
+      });
+    });
+    popover.appendChild(createNewBtn);
+    document.body.appendChild(popover);
+    const popRect = popover.getBoundingClientRect();
+    const clampedLeft = Math.min(Math.max(12, rect.left - 30), Math.max(12, window.innerWidth - popRect.width - 12));
+    const preferTop = rect.bottom + 8 + popRect.height > window.innerHeight - 12 && rect.top - popRect.height - 8 >= 12 ? rect.top - popRect.height - 8 : Math.min(rect.bottom + 8, Math.max(12, window.innerHeight - popRect.height - 12));
+    popover.style.left = `${clampedLeft}px`;
+    popover.style.top = `${preferTop}px`;
+    const closeOnOutside = (e) => {
+      if (!popover.contains(e.target) && e.target !== anchorBtn) {
+        popover.remove();
+        document.removeEventListener("mousedown", closeOnOutside);
+      }
+    };
+    setTimeout(() => document.addEventListener("mousedown", closeOnOutside), 20);
+  }
+  function assignSelectedToFolder(folderId) {
+    const ids = Array.from(selectedMap.keys());
+    if (ids.length === 0) return;
+    ids.forEach((convId) => {
+      if (folderId) {
+        state.folderState.assignments[convId] = folderId;
+      } else {
+        delete state.folderState.assignments[convId];
+      }
+    });
+    saveFolderData(state.folderState);
+    clearAllSelections();
+    refreshUI();
+    updateStatusToast(
+      folderId ? t().toastMovedToFolder(ids.length) : t().toastRemovedFromFolder(ids.length),
+      null,
+      null,
+      2500
+    );
+  }
+  function setupDelegatedSidebarListener() {
+    const stopPressOnControls = (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.classList.contains("gcm-checkbox") || target.closest(".gcm-lock-icon")) {
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+        if (e.type === "mousedown" && target.id !== "gcm-select-all") {
+          e.preventDefault();
+        }
+      }
+    };
+    document.addEventListener("pointerdown", stopPressOnControls, true);
+    document.addEventListener("mousedown", stopPressOnControls, true);
+    document.addEventListener("pointerup", stopPressOnControls, true);
+    document.addEventListener("mouseup", stopPressOnControls, true);
+    document.addEventListener(
+      "click",
+      (e) => {
+        const target = e.target;
+        if (!(target instanceof Element)) return;
+        const lockTarget = target.closest(".gcm-lock-icon");
+        if (lockTarget) {
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+          e.preventDefault();
+          const id = lockTarget.dataset.convId;
+          if (id) {
+            delete state.folderState.protectedIds[id];
+            saveFolderData(state.folderState);
+            refreshUI();
+          }
+          return;
+        }
+        if (target.classList.contains("gcm-checkbox") && target.id !== "gcm-select-all") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+          const checkbox = target;
+          const id = checkbox.dataset.convId;
+          const row = checkbox.closest(".gcm-chat-row") || checkbox.parentElement;
+          if (!id || !row) return;
+          const willBeChecked = !selectedMap.has(id);
+          const applyCbState = (cb, r, cbId, state2) => {
+            cb.checked = state2;
+            cb.classList.toggle("gcm-checked", state2);
+            if (state2) {
+              selectedMap.set(cbId, { id: cbId });
+              r.classList.add("gcm-selected");
+            } else {
+              selectedMap.delete(cbId);
+              r.classList.remove("gcm-selected");
+            }
+          };
+          const sidebar = getSidebarElement() || document;
+          const visibleCheckboxes = Array.from(
+            sidebar.querySelectorAll(".gcm-checkbox:not(#gcm-select-all)")
+          ).filter((cb) => {
+            const r = cb.closest(".gcm-chat-row") || cb.parentElement;
+            return r && !r.classList.contains("gcm-hidden-by-filter");
+          });
+          if (e.shiftKey && state.lastCheckedCheckbox && state.lastCheckedCheckbox !== checkbox) {
+            const start = visibleCheckboxes.indexOf(state.lastCheckedCheckbox);
+            const end = visibleCheckboxes.indexOf(checkbox);
+            if (start !== -1 && end !== -1) {
+              const [low, high] = [Math.min(start, end), Math.max(start, end)];
+              for (let i = low; i <= high; i++) {
+                const cb = visibleCheckboxes[i];
+                const cbId = cb.dataset.convId;
+                const cbRow = cb.closest(".gcm-chat-row") || cb.parentElement;
+                if (cbId && cbRow) {
+                  applyCbState(cb, cbRow, cbId, willBeChecked);
+                }
+              }
+            } else {
+              applyCbState(checkbox, row, id, willBeChecked);
+            }
+          } else {
+            applyCbState(checkbox, row, id, willBeChecked);
+          }
+          const syncNativeChecked = () => {
+            visibleCheckboxes.forEach((cb) => {
+              const cbId = cb.dataset.convId;
+              if (cbId) {
+                const st = selectedMap.has(cbId);
+                cb.checked = st;
+                cb.classList.toggle("gcm-checked", st);
+              }
+            });
+          };
+          if (typeof queueMicrotask === "function") queueMicrotask(syncNativeChecked);
+          setTimeout(syncNativeChecked, 0);
+          state.lastCheckedCheckbox = checkbox;
+          updateToolbarState();
+        }
+      },
+      true
+    );
+  }
+  function injectCheckboxes(items) {
+    for (let i = 0; i < items.length; i++) {
+      const { id, row } = items[i];
+      if (!row.classList.contains("gcm-chat-row")) {
+        row.classList.add("gcm-chat-row");
+      }
+      const isSelected = selectedMap.has(id);
+      const existingCb = row.querySelector(".gcm-checkbox");
+      if (existingCb) {
+        if (existingCb.dataset.convId !== id) existingCb.dataset.convId = id;
+        if (existingCb.checked !== isSelected) existingCb.checked = isSelected;
+        existingCb.classList.toggle("gcm-checked", isSelected);
+        row.classList.toggle("gcm-selected", isSelected);
+        continue;
+      }
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "gcm-checkbox" + (isSelected ? " gcm-checked" : "");
+      checkbox.title = t().checkboxTitle;
+      checkbox.dataset.convId = id;
+      checkbox.checked = isSelected;
+      row.classList.toggle("gcm-selected", isSelected);
+      row.prepend(checkbox);
+    }
+  }
+  function toggleSelectAll(checked) {
+    const selectAllCb = document.getElementById("gcm-select-all");
+    if (selectAllCb) {
+      selectAllCb.checked = checked;
+      selectAllCb.classList.toggle("gcm-checked", checked);
+    }
+    const sidebar = getSidebarElement() || document;
+    const checkboxes = Array.from(sidebar.querySelectorAll(".gcm-checkbox:not(#gcm-select-all)")).filter((cb) => {
+      const r = cb.closest(".gcm-chat-row") || cb.parentElement;
+      return r && !r.classList.contains("gcm-hidden-by-filter");
+    });
+    checkboxes.forEach((cb) => {
+      cb.checked = checked;
+      cb.classList.toggle("gcm-checked", checked);
+      const id = cb.dataset.convId;
+      const row = cb.closest(".gcm-chat-row") || cb.parentElement;
+      if (id && row) {
+        if (checked) {
+          selectedMap.set(id, { id });
+          row.classList.add("gcm-selected");
+        } else {
+          selectedMap.delete(id);
+          row.classList.remove("gcm-selected");
+        }
+      }
+    });
+    updateToolbarState();
+  }
+
+  // src/toolbar.js
+  function createToolbar() {
+    if (document.getElementById("gcm-toolbar")) return;
+    const toolbar = document.createElement("div");
+    toolbar.id = "gcm-toolbar";
+    const headWrap = document.createElement("div");
+    headWrap.className = "gcm-toolbar-head";
+    const collapseBtn = document.createElement("button");
+    collapseBtn.id = "gcm-toolbar-toggle";
+    collapseBtn.className = "gcm-toolbar-toggle";
+    collapseBtn.addEventListener("click", () => {
+      if (state.toolbarJustDragged) return;
+      state.toolbarCollapsed = !state.toolbarCollapsed;
+      saveView();
+      applyToolbarLayout();
+    });
+    const orientBtn = document.createElement("button");
+    orientBtn.id = "gcm-toolbar-orient";
+    orientBtn.className = "gcm-toolbar-toggle gcm-toolbar-orient";
+    orientBtn.addEventListener("click", () => {
+      if (state.toolbarJustDragged) return;
+      state.toolbarVertical = !state.toolbarVertical;
+      saveView();
+      applyToolbarLayout();
+    });
+    headWrap.appendChild(collapseBtn);
+    headWrap.appendChild(orientBtn);
+    const selectAllWrap = document.createElement("label");
+    selectAllWrap.className = "gcm-select-all-wrap";
+    selectAllWrap.title = t().selectAllTitle;
+    const selectAllCb = document.createElement("input");
+    selectAllCb.type = "checkbox";
+    selectAllCb.id = "gcm-select-all";
+    selectAllCb.className = "gcm-checkbox";
+    selectAllCb.style.margin = "0";
+    selectAllCb.addEventListener("change", (e) => toggleSelectAll(e.target.checked));
+    const selectAllText = document.createElement("span");
+    selectAllText.textContent = t().selectAll;
+    selectAllWrap.appendChild(selectAllCb);
+    selectAllWrap.appendChild(selectAllText);
+    const folderBtn = document.createElement("button");
+    folderBtn.id = "gcm-folder-btn";
+    folderBtn.className = "gcm-btn gcm-btn-folder";
+    folderBtn.disabled = true;
+    setButtonIconText(folderBtn, ICONS.folder, t().folderBtn(0));
+    folderBtn.title = t().folderBtnTitle;
+    folderBtn.addEventListener("click", () => toggleMoveToFolderPopover(folderBtn));
+    const protectBtn = document.createElement("button");
+    protectBtn.id = "gcm-protect-btn";
+    protectBtn.className = "gcm-btn gcm-btn-neutral";
+    protectBtn.disabled = true;
+    setButtonIconText(protectBtn, ICONS.lock, t().protectBtn);
+    protectBtn.title = t().protectBtnTitle;
+    protectBtn.addEventListener("click", toggleProtectSelected);
+    const exportBtn = document.createElement("button");
+    exportBtn.id = "gcm-export-btn";
+    exportBtn.className = "gcm-btn gcm-btn-neutral";
+    setButtonIconText(exportBtn, ICONS.fileText, t().exportBtn);
+    exportBtn.title = t().exportBtnTitle;
+    exportBtn.addEventListener("click", exportSelectedConversationsToMarkdown);
+    const deleteBtn = document.createElement("button");
+    deleteBtn.id = "gcm-delete-btn";
+    deleteBtn.className = "gcm-btn gcm-btn-danger";
+    deleteBtn.disabled = true;
+    setButtonIconText(deleteBtn, ICONS.trash, t().deleteBtn(0));
+    deleteBtn.addEventListener("click", deleteSelectedChats);
+    const stopBtn = document.createElement("button");
+    stopBtn.id = "gcm-stop-btn";
+    stopBtn.className = "gcm-btn gcm-btn-stop";
+    stopBtn.style.display = "none";
+    setButtonIconText(stopBtn, ICONS.stop, t().stopBtn);
+    stopBtn.addEventListener("click", stopDeletion);
+    toolbar.appendChild(headWrap);
+    toolbar.appendChild(selectAllWrap);
+    toolbar.appendChild(folderBtn);
+    toolbar.appendChild(protectBtn);
+    toolbar.appendChild(exportBtn);
+    toolbar.appendChild(deleteBtn);
+    toolbar.appendChild(stopBtn);
+    enableToolbarDrag(toolbar);
+    document.body.appendChild(toolbar);
+    toolbar.classList.add("gcm-dragging");
+    applyToolbarLayout();
+    void toolbar.offsetWidth;
+    requestAnimationFrame(() => toolbar.classList.remove("gcm-dragging"));
+  }
+  function applyToolbarLayout() {
+    const toolbar = document.getElementById("gcm-toolbar");
+    const collapseBtn = document.getElementById("gcm-toolbar-toggle");
+    const orientBtn = document.getElementById("gcm-toolbar-orient");
+    if (!toolbar || !collapseBtn) return;
+    toolbar.classList.toggle("gcm-collapsed", state.toolbarCollapsed);
+    toolbar.classList.toggle("gcm-vertical", !!state.toolbarVertical && !state.toolbarCollapsed);
+    collapseBtn.textContent = "";
+    collapseBtn.appendChild(createIconElement(state.toolbarCollapsed ? ICONS.menu : ICONS.chevronRight));
+    collapseBtn.title = state.toolbarCollapsed ? t().toolbarExpandTitle : t().toolbarCollapseTitle;
+    if (orientBtn) {
+      orientBtn.textContent = "";
+      orientBtn.appendChild(createIconElement(state.toolbarVertical ? ICONS.layoutHorizontal : ICONS.layoutVertical));
+      orientBtn.title = state.toolbarVertical ? t().toolbarHorizontalTitle : t().toolbarVerticalTitle;
+    }
+    clampToolbarPosition(toolbar);
+  }
+  function clampToolbarPosition(toolbar) {
+    const pos = state.folderState.toolbarPos;
+    if (!toolbar || !toolbar.isConnected || !pos) return;
+    const rect = toolbar.getBoundingClientRect();
+    const left = Math.min(Math.max(6, pos.left), Math.max(6, window.innerWidth - rect.width - 6));
+    const top = Math.min(Math.max(6, pos.top), Math.max(6, window.innerHeight - rect.height - 6));
+    toolbar.style.setProperty("left", `${left}px`, "important");
+    toolbar.style.setProperty("top", `${top}px`, "important");
+    toolbar.style.setProperty("right", "auto", "important");
+    toolbar.style.setProperty("bottom", "auto", "important");
+  }
+  function enableToolbarDrag(toolbar) {
+    const DRAG_THRESHOLD = 4;
+    let startX = 0;
+    let startY = 0;
+    let originLeft = 0;
+    let originTop = 0;
+    let dragging = false;
+    let rafId = 0;
+    let lastDx = 0;
+    let lastDy = 0;
+    let barW = 0;
+    let barH = 0;
+    toolbar.addEventListener(
+      "click",
+      (e) => {
+        if (state.toolbarJustDragged) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      },
+      true
+    );
+    const applyDrag = () => {
+      rafId = 0;
+      const left = Math.min(Math.max(6, originLeft + lastDx), Math.max(6, window.innerWidth - barW - 6));
+      const top = Math.min(Math.max(6, originTop + lastDy), Math.max(6, window.innerHeight - barH - 6));
+      toolbar.style.setProperty("left", `${left}px`, "important");
+      toolbar.style.setProperty("top", `${top}px`, "important");
+      toolbar.style.setProperty("right", "auto", "important");
+      toolbar.style.setProperty("bottom", "auto", "important");
+      state.folderState.toolbarPos = { left, top };
+    };
+    const onMove = (e) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+        dragging = true;
+        toolbar.classList.add("gcm-dragging");
+        const rect = toolbar.getBoundingClientRect();
+        barW = rect.width;
+        barH = rect.height;
+      }
+      lastDx = dx;
+      lastDy = dy;
+      if (!rafId) rafId = requestAnimationFrame(applyDrag);
+      e.preventDefault();
+    };
+    const onEnd = () => {
+      document.removeEventListener("pointermove", onMove, true);
+      document.removeEventListener("pointerup", onEnd, true);
+      document.removeEventListener("pointercancel", onEnd, true);
+      if (dragging) {
+        dragging = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          applyDrag();
+        }
+        toolbar.classList.remove("gcm-dragging");
+        saveFolderData(state.folderState);
+        state.toolbarJustDragged = true;
+        setTimeout(() => {
+          state.toolbarJustDragged = false;
+        }, 40);
+      }
+    };
+    toolbar.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      const rect = toolbar.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      originLeft = rect.left;
+      originTop = rect.top;
+      dragging = false;
+      document.addEventListener("pointermove", onMove, true);
+      document.addEventListener("pointerup", onEnd, true);
+      document.addEventListener("pointercancel", onEnd, true);
+    });
+  }
+  function updateToolbarState() {
+    const folderBtn = document.getElementById("gcm-folder-btn");
+    const protectBtn = document.getElementById("gcm-protect-btn");
+    const exportBtn = document.getElementById("gcm-export-btn");
+    const deleteBtn = document.getElementById("gcm-delete-btn");
+    const stopBtn = document.getElementById("gcm-stop-btn");
+    const selectAllCb = document.getElementById("gcm-select-all");
+    if (!deleteBtn || !stopBtn || !folderBtn) return;
+    if (state.deletionInProgress) {
+      folderBtn.style.display = "none";
+      if (protectBtn) protectBtn.style.display = "none";
+      if (exportBtn) exportBtn.style.display = "none";
+      deleteBtn.style.display = "none";
+      stopBtn.style.display = "inline-flex";
+      if (selectAllCb) selectAllCb.disabled = true;
+    } else {
+      folderBtn.style.display = "inline-flex";
+      if (protectBtn) protectBtn.style.display = "inline-flex";
+      if (exportBtn) exportBtn.style.display = "inline-flex";
+      deleteBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+      if (selectAllCb) selectAllCb.disabled = false;
+      if (selectAllCb) {
+        const rowCbs = document.querySelectorAll(".gcm-chat-row .gcm-checkbox:not(#gcm-select-all)");
+        let visibleTotal = 0;
+        let visibleChecked = 0;
+        rowCbs.forEach((cb) => {
+          const r = cb.closest(".gcm-chat-row") || cb.parentElement;
+          if (!r || r.classList.contains("gcm-hidden-by-filter")) return;
+          visibleTotal++;
+          if (selectedMap.has(cb.dataset.convId)) visibleChecked++;
+        });
+        const allChecked = visibleTotal > 0 && visibleChecked === visibleTotal;
+        if (selectAllCb.checked !== allChecked) selectAllCb.checked = allChecked;
+        selectAllCb.classList.toggle("gcm-checked", allChecked);
+        selectAllCb.indeterminate = visibleChecked > 0 && !allChecked;
+      }
+      const count = selectedMap.size;
+      folderBtn.disabled = count === 0;
+      const fText = t().folderBtn(count);
+      if (folderBtn.dataset.label !== fText) {
+        folderBtn.dataset.label = fText;
+        setButtonIconText(folderBtn, ICONS.folder, fText);
+      }
+      if (protectBtn) {
+        protectBtn.disabled = count === 0;
+      }
+      deleteBtn.disabled = count === 0;
+      const dText = t().deleteBtn(count);
+      if (deleteBtn.dataset.label !== dText) {
+        deleteBtn.dataset.label = dText;
+        setButtonIconText(deleteBtn, ICONS.trash, dText);
+      }
+    }
   }
 
   // src/panel.js
@@ -1639,7 +2684,12 @@ ${text}` : text;
   }
   function registerGlobalListeners() {
     const applyExternalState = (incoming) => {
-      const keepView = { filter: state.activeFolderFilter, sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed };
+      const keepView = {
+        filter: state.activeFolderFilter,
+        sort: state.sortMode,
+        toolbarCollapsed: state.toolbarCollapsed,
+        toolbarVertical: state.toolbarVertical
+      };
       const langChanged = incoming.lang !== state.folderState.lang;
       state.folderState = { ...incoming, view: keepView };
       if (!BUILTIN_FILTERS.includes(state.activeFolderFilter) && !state.folderState.folders.some((f) => f.id === state.activeFolderFilter)) {
@@ -1655,6 +2705,7 @@ ${text}` : text;
           box.classList.toggle("gcm-minimized", state.folderState.minimized);
           clampBoxPosition(box);
         }
+        applyToolbarLayout();
         const pills = document.getElementById("gcm-pills-container");
         if (pills) delete pills.dataset.sig;
       }
@@ -1712,7 +2763,10 @@ ${text}` : text;
       }
     } catch (_) {
     }
-    window.addEventListener("resize", () => clampBoxPosition(document.getElementById("gcm-folders-box")));
+    window.addEventListener("resize", () => {
+      clampBoxPosition(document.getElementById("gcm-folders-box"));
+      clampToolbarPosition(document.getElementById("gcm-toolbar"));
+    });
   }
   function buildFoldersPanelDOM(box) {
     box.textContent = "";
@@ -1893,807 +2947,6 @@ ${text}` : text;
       refreshUI();
     });
     return pill;
-  }
-
-  // src/deletion.js
-  function isPinOrArchiveButton(btn, allowArchive = false) {
-    if (!btn) return true;
-    const label = ((btn.getAttribute?.("aria-label") || "") + " " + (btn.getAttribute?.("title") || "") + " " + (btn.getAttribute?.("data-testid") || "")).toLowerCase();
-    if (allowArchive && label.includes("archiv")) {
-      return false;
-    }
-    return label.includes("fijar") || label.includes("desfijar") || label.includes("pin") || label.includes("unpin") || label.includes("archiv");
-  }
-  function isRemoteTask(targetId, link) {
-    if (typeof targetId === "string" && targetId.startsWith("task_")) return true;
-    const href = link?.getAttribute?.("href") || "";
-    return href.includes("/codex/tasks/") || href.includes("/tasks/");
-  }
-  function findOptionsTrigger(row, link, isTask = false) {
-    const targets = [row, link, row.parentElement].filter(Boolean);
-    for (const tEl of targets) {
-      tEl.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
-      tEl.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
-      tEl.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      tEl.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-    }
-    const countConvLinks = (el2) => el2.querySelectorAll(CONV_LINK_SELECTOR).length;
-    const scopes = [];
-    scopes.push(row);
-    if (row.parentElement && row.parentElement !== document.body && countConvLinks(row.parentElement) <= 1) {
-      scopes.push(row.parentElement);
-    }
-    if (row.nextElementSibling && countConvLinks(row.nextElementSibling) === 0) {
-      scopes.push(row.nextElementSibling);
-    }
-    const prioritySelectors = PLATFORM_KEY === "chatgpt" ? [
-      'button[data-testid^="history-item-"][data-testid$="-options"]',
-      'button[data-testid*="options"]',
-      'button[aria-haspopup="menu"]',
-      'button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]'
-    ] : [SELECTORS.optionsTrigger];
-    for (const sel of prioritySelectors) {
-      for (const scope of scopes) {
-        const candidates = Array.from(scope.querySelectorAll(sel));
-        const valid = candidates.find((b) => !isPinOrArchiveButton(b, isTask));
-        if (valid) return valid;
-      }
-    }
-    return null;
-  }
-  function removeDeletedRowFromDOM(row, targetId) {
-    if (!row && targetId) {
-      const found = findRowById(targetId);
-      row = found?.row;
-    }
-    if (!row) return;
-    let containerToRemove = row;
-    const parentLi = row.closest("li");
-    if (parentLi && isSingleRowContainer(parentLi)) {
-      containerToRemove = parentLi;
-    } else {
-      let p = row.parentElement;
-      while (p && p !== document.body && p.tagName !== "NAV" && p.tagName !== "OL" && p.tagName !== "UL") {
-        if (isSingleRowContainer(p) && !p.classList.contains("conversations-container")) {
-          containerToRemove = p;
-          p = p.parentElement;
-        } else {
-          break;
-        }
-      }
-    }
-    const parentList = containerToRemove.parentElement;
-    containerToRemove.remove();
-    if (parentList && (parentList.tagName === "OL" || parentList.tagName === "UL")) {
-      if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-          sectionWrapper.remove();
-        }
-      }
-    }
-  }
-  function cleanupEmptySidebarItems() {
-    const sidebar = getSidebarElement() || document;
-    const lis = sidebar.querySelectorAll("li");
-    lis.forEach((li) => {
-      if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
-        li.remove();
-      }
-    });
-    const lists = sidebar.querySelectorAll("ol, ul");
-    lists.forEach((list) => {
-      if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-          sectionWrapper.remove();
-        }
-      }
-    });
-  }
-  function checkRedirectIfActiveChatDeleted(deletedIds) {
-    if (PLATFORM_KEY !== "chatgpt" || !Array.isArray(deletedIds) || deletedIds.length === 0) return;
-    const currentPath = location.pathname;
-    const isCurrentDeleted = deletedIds.some((id) => currentPath.includes(id));
-    if (isCurrentDeleted) {
-      const newChatBtn = document.querySelector('[data-testid="create-new-chat-button"], [data-testid="new-chat-button"], a[href="/"]');
-      if (newChatBtn) {
-        realClick(newChatBtn);
-      } else {
-        location.href = "/";
-      }
-    }
-  }
-  async function getChatGptToken(forceRefresh = false) {
-    if (forceRefresh) state.cachedChatGptToken = null;
-    if (!state.cachedChatGptToken) {
-      const sessRes = await fetch("/api/auth/session", { credentials: "include" });
-      if (sessRes.ok) {
-        const sessData = await sessRes.json();
-        state.cachedChatGptToken = sessData?.accessToken || null;
-      }
-    }
-    return state.cachedChatGptToken;
-  }
-  function hideChatGptConversation(targetId, token) {
-    return fetch(`/backend-api/conversation/${targetId}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ is_visible: false })
-    });
-  }
-  async function deleteOrArchiveRemoteTaskApi(targetId, token) {
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    };
-    try {
-      const delRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers
-      });
-      if (delRes.ok) return delRes;
-      if (delRes.status === 401 || delRes.status === 403) return delRes;
-    } catch (_) {
-    }
-    try {
-      const archRes = await fetch(`/backend-api/wham/tasks/${targetId}/archive`, {
-        method: "POST",
-        credentials: "include",
-        headers
-      });
-      if (archRes.ok) {
-        try {
-          await fetch(`/backend-api/wham/tasks/${targetId}`, {
-            method: "DELETE",
-            credentials: "include",
-            headers
-          });
-        } catch (_) {
-        }
-        return archRes;
-      }
-      if (archRes.status === 401 || archRes.status === 403) return archRes;
-    } catch (_) {
-    }
-    return fetch(`/backend-api/tasks/${targetId}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers
-    });
-  }
-  async function deleteChatGptViaApi(targetId, row, isTask = false) {
-    if (PLATFORM_KEY !== "chatgpt" || typeof fetch !== "function") return false;
-    try {
-      let token = await getChatGptToken();
-      if (!token) return false;
-      const runCall = (tk) => isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
-      let res = await runCall(token);
-      if (res.status === 401 || res.status === 403) {
-        token = await getChatGptToken(true);
-        if (!token) return false;
-        res = await runCall(token);
-      }
-      if (res.ok) {
-        removeDeletedRowFromDOM(row, targetId);
-        cleanupEmptySidebarItems();
-        await sleep(220);
-        return true;
-      }
-    } catch (_) {
-    }
-    return false;
-  }
-  async function deleteSingleConversation(targetId) {
-    const found = findRowById(targetId);
-    if (!found) return false;
-    const { row, link } = found;
-    const isTask = isRemoteTask(targetId, link);
-    if (PLATFORM_KEY === "chatgpt" && isTask) {
-      const apiTaskOk = await deleteChatGptViaApi(targetId, row, true);
-      if (apiTaskOk) return true;
-    }
-    row.scrollIntoView({ block: "center" });
-    await sleep(180);
-    try {
-      const trigger = await pollUntil(() => findOptionsTrigger(row, link, isTask), 1200, 80);
-      if (!trigger) {
-        throw new Error("Options menu button not found.");
-      }
-      realClick(trigger);
-      const menu = await pollUntil(
-        () => Array.from(document.querySelectorAll(SELECTORS.menuPanel)).find(isActiveOverlay),
-        2200
-      );
-      if (!menu) {
-        if (isTask) {
-          await sleep(450);
-          removeDeletedRowFromDOM(row, targetId);
-          cleanupEmptySidebarItems();
-          return true;
-        }
-        throw new Error("Menu did not open.");
-      }
-      await sleep(180);
-      const menuItems = Array.from(menu.querySelectorAll(SELECTORS.deleteMenuItem));
-      const deleteBtn = menuItems.find((el2) => {
-        const txt = (el2.textContent || "").toLowerCase();
-        const testId = (el2.getAttribute("data-testid") || "").toLowerCase();
-        const cls = typeof el2.className === "string" ? el2.className.toLowerCase() : "";
-        return testId.includes("delete") || isTask && testId.includes("archive") || cls.includes("text-danger") || cls.includes("text-token-text-error") || cls.includes("text-red") || txt.includes("eliminar") || txt.includes("delete") || txt.includes("borrar") || isTask && (txt.includes("archivar") || txt.includes("archive")) || el2.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]');
-      });
-      if (!deleteBtn) {
-        throw new Error("Delete option not found.");
-      }
-      const isArchiveAction = isTask && ((deleteBtn.textContent || "").toLowerCase().includes("archiv") || (deleteBtn.getAttribute("data-testid") || "").toLowerCase().includes("archive"));
-      realClick(deleteBtn);
-      const dialog = await pollUntil(
-        () => Array.from(document.querySelectorAll(SELECTORS.confirmDialog)).find(isActiveOverlay),
-        isArchiveAction ? 1e3 : 2200
-      );
-      if (!dialog) {
-        if (isArchiveAction) {
-          await sleep(450);
-          removeDeletedRowFromDOM(row, targetId);
-          cleanupEmptySidebarItems();
-          return true;
-        }
-        throw new Error("Confirm dialog did not appear.");
-      }
-      await sleep(200);
-      let confirmBtn = dialog.querySelector(SELECTORS.confirmButton);
-      if (!confirmBtn) {
-        const dialogBtns = Array.from(dialog.querySelectorAll("button"));
-        confirmBtn = dialogBtns.find((b) => {
-          const txt = (b.textContent || "").trim().toLowerCase();
-          return txt === "eliminar" || txt === "delete" || txt === "borrar" || isTask && (txt.includes("archivar") || txt.includes("archive") || txt.includes("detener") || txt.includes("stop"));
-        });
-        if (!confirmBtn && dialogBtns.length === 2) confirmBtn = dialogBtns[1];
-      }
-      if (!confirmBtn) {
-        throw new Error("Confirm button not found.");
-      }
-      realClick(confirmBtn);
-      await pollUntil(() => !isActiveOverlay(dialog), 4e3);
-      await sleep(PLATFORM_KEY === "chatgpt" ? 650 : 550);
-      removeDeletedRowFromDOM(row, targetId);
-      cleanupEmptySidebarItems();
-      return true;
-    } catch (domErr) {
-      if (PLATFORM_KEY === "chatgpt") {
-        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-        const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
-        if (apiOk) {
-          removeDeletedRowFromDOM(row, targetId);
-          cleanupEmptySidebarItems();
-          return true;
-        }
-      }
-      throw domErr;
-    }
-  }
-  async function deleteSelectedChats() {
-    const allSelectedIds = Array.from(selectedMap.keys());
-    if (allSelectedIds.length === 0 || state.deletionInProgress) return;
-    const queueIds = allSelectedIds.filter((id) => !state.folderState.protectedIds[id]);
-    const skippedProtected = allSelectedIds.length - queueIds.length;
-    if (queueIds.length === 0) {
-      updateStatusToast(t().toastAllProtected, null, null, 3500);
-      return;
-    }
-    const confirmed = await showConfirmModal(queueIds.length, skippedProtected);
-    if (!confirmed) return;
-    state.deletionInProgress = true;
-    state.deletionStopRequested = false;
-    document.body.classList.add("gcm-stealth-delete");
-    updateToolbarState();
-    const total = queueIds.length;
-    let deletedCount = 0;
-    let errorCount = 0;
-    try {
-      for (let i = 0; i < queueIds.length; i++) {
-        if (state.deletionStopRequested) break;
-        const id = queueIds[i];
-        updateStatusToast(t().toastDeletingProgress(i + 1, total), i, total);
-        try {
-          const ok = await deleteSingleConversation(id);
-          if (ok) {
-            deletedCount++;
-            selectedMap.delete(id);
-            if (state.folderState.assignments[id]) {
-              delete state.folderState.assignments[id];
-              saveFolderData(state.folderState);
-            }
-          } else {
-            errorCount++;
-          }
-        } catch (err) {
-          console.warn("[ChatFold] Error deleting conversation:", err);
-          errorCount++;
-          document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-          await sleep(400);
-        }
-      }
-    } finally {
-      document.body.classList.remove("gcm-stealth-delete");
-      state.deletionInProgress = false;
-      state.deletionStopRequested = false;
-    }
-    const selectAllCb = document.getElementById("gcm-select-all");
-    if (selectAllCb) selectAllCb.checked = false;
-    cleanupEmptySidebarItems();
-    refreshUI();
-    checkRedirectIfActiveChatDeleted(queueIds.slice(0, deletedCount));
-    const summary = errorCount > 0 ? t().toastDeleteFinishedErr(deletedCount, errorCount) : t().toastDeleteSuccess(deletedCount);
-    updateStatusToast(summary, total, total, 4500);
-  }
-  function stopDeletion() {
-    state.deletionStopRequested = true;
-    updateStatusToast(t().toastStopping, null, null, 2500);
-  }
-
-  // src/markdown-export.js
-  function exportSelectedConversationsToMarkdown() {
-    const items = getConversationRows();
-    const selectedIds = Array.from(selectedMap.keys());
-    const folderLookup = new Map(state.folderState.folders.map((f) => [f.id, f.name]));
-    let markdown = `# ${t().mdHeader}
-`;
-    markdown += `${t().mdDate}: ${(/* @__PURE__ */ new Date()).toLocaleString()}
-
-`;
-    const allMessages = Array.from(document.querySelectorAll(SELECTORS.activeMessages));
-    const messages = allMessages.filter((m) => !allMessages.some((o) => o !== m && o.contains(m)));
-    if (selectedIds.length > 0) {
-      markdown += `## ${t().mdSelectedIndex(selectedIds.length)}
-
-`;
-      selectedIds.forEach((id, idx) => {
-        const rowObj = items.find((it) => it.id === id);
-        const title = (rowObj?.title || id).replace(/[[\]\r\n]/g, " ").trim();
-        const folderName = folderLookup.get(state.folderState.assignments[id]) || t().pillUnassigned;
-        const isLocked = state.folderState.protectedIds[id] ? " 🔒" : "";
-        markdown += `${idx + 1}. **[${title}](${P.buildUrl(id)})** — *${t().mdFolderLabel}: ${folderName}*${isLocked}
-`;
-      });
-      markdown += `
----
-
-`;
-    }
-    if (messages.length > 0) {
-      markdown += `## ${t().mdActiveChatHeader}
-
-`;
-      messages.forEach((msg) => {
-        const text = (msg.innerText || msg.textContent || "").trim();
-        if (!text) return;
-        const isUser = msg.getAttribute?.("data-message-author-role") === "user" || msg.tagName.toLowerCase().includes("user") || msg.classList.contains("query-text") || !!msg.querySelector?.('[data-message-author-role="user"]');
-        markdown += `### ${isUser ? t().mdUser : `✨ ${P.name}`}
-
-${text}
-
----
-
-`;
-      });
-    }
-    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${PLATFORM_KEY}-export-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-    updateStatusToast(t().toastMdExported, null, null, 3e3);
-  }
-
-  // src/toolbar.js
-  function createToolbar() {
-    if (document.getElementById("gcm-toolbar")) return;
-    const toolbar = document.createElement("div");
-    toolbar.id = "gcm-toolbar";
-    const selectAllWrap = document.createElement("label");
-    selectAllWrap.className = "gcm-select-all-wrap";
-    selectAllWrap.title = t().selectAllTitle;
-    const selectAllCb = document.createElement("input");
-    selectAllCb.type = "checkbox";
-    selectAllCb.id = "gcm-select-all";
-    selectAllCb.className = "gcm-checkbox";
-    selectAllCb.style.margin = "0";
-    selectAllCb.addEventListener("change", (e) => toggleSelectAll(e.target.checked));
-    const selectAllText = document.createElement("span");
-    selectAllText.textContent = t().selectAll;
-    selectAllWrap.appendChild(selectAllCb);
-    selectAllWrap.appendChild(selectAllText);
-    const folderBtn = document.createElement("button");
-    folderBtn.id = "gcm-folder-btn";
-    folderBtn.className = "gcm-btn gcm-btn-folder";
-    folderBtn.disabled = true;
-    setButtonIconText(folderBtn, ICONS.folder, t().folderBtn(0));
-    folderBtn.title = t().folderBtnTitle;
-    folderBtn.addEventListener("click", () => toggleMoveToFolderPopover(folderBtn));
-    const protectBtn = document.createElement("button");
-    protectBtn.id = "gcm-protect-btn";
-    protectBtn.className = "gcm-btn gcm-btn-neutral";
-    protectBtn.disabled = true;
-    setButtonIconText(protectBtn, ICONS.lock, t().protectBtn);
-    protectBtn.title = t().protectBtnTitle;
-    protectBtn.addEventListener("click", toggleProtectSelected);
-    const exportBtn = document.createElement("button");
-    exportBtn.id = "gcm-export-btn";
-    exportBtn.className = "gcm-btn gcm-btn-neutral";
-    setButtonIconText(exportBtn, ICONS.fileText, t().exportBtn);
-    exportBtn.title = t().exportBtnTitle;
-    exportBtn.addEventListener("click", exportSelectedConversationsToMarkdown);
-    const deleteBtn = document.createElement("button");
-    deleteBtn.id = "gcm-delete-btn";
-    deleteBtn.className = "gcm-btn gcm-btn-danger";
-    deleteBtn.disabled = true;
-    setButtonIconText(deleteBtn, ICONS.trash, t().deleteBtn(0));
-    deleteBtn.addEventListener("click", deleteSelectedChats);
-    const stopBtn = document.createElement("button");
-    stopBtn.id = "gcm-stop-btn";
-    stopBtn.className = "gcm-btn gcm-btn-stop";
-    stopBtn.style.display = "none";
-    setButtonIconText(stopBtn, ICONS.stop, t().stopBtn);
-    stopBtn.addEventListener("click", stopDeletion);
-    const collapseBtn = document.createElement("button");
-    collapseBtn.id = "gcm-toolbar-toggle";
-    collapseBtn.className = "gcm-toolbar-toggle";
-    collapseBtn.addEventListener("click", () => {
-      state.toolbarCollapsed = !state.toolbarCollapsed;
-      saveView();
-      applyToolbarCollapsed();
-    });
-    toolbar.appendChild(collapseBtn);
-    toolbar.appendChild(selectAllWrap);
-    toolbar.appendChild(folderBtn);
-    toolbar.appendChild(protectBtn);
-    toolbar.appendChild(exportBtn);
-    toolbar.appendChild(deleteBtn);
-    toolbar.appendChild(stopBtn);
-    document.body.appendChild(toolbar);
-    applyToolbarCollapsed();
-  }
-  function applyToolbarCollapsed() {
-    const toolbar = document.getElementById("gcm-toolbar");
-    const btn = document.getElementById("gcm-toolbar-toggle");
-    if (!toolbar || !btn) return;
-    toolbar.classList.toggle("gcm-collapsed", state.toolbarCollapsed);
-    btn.textContent = "";
-    btn.appendChild(createIconElement(state.toolbarCollapsed ? ICONS.menu : ICONS.chevronRight));
-    btn.title = state.toolbarCollapsed ? t().toolbarExpandTitle : t().toolbarCollapseTitle;
-  }
-  function updateToolbarState() {
-    const folderBtn = document.getElementById("gcm-folder-btn");
-    const protectBtn = document.getElementById("gcm-protect-btn");
-    const exportBtn = document.getElementById("gcm-export-btn");
-    const deleteBtn = document.getElementById("gcm-delete-btn");
-    const stopBtn = document.getElementById("gcm-stop-btn");
-    const selectAllCb = document.getElementById("gcm-select-all");
-    if (!deleteBtn || !stopBtn || !folderBtn) return;
-    if (state.deletionInProgress) {
-      folderBtn.style.display = "none";
-      if (protectBtn) protectBtn.style.display = "none";
-      if (exportBtn) exportBtn.style.display = "none";
-      deleteBtn.style.display = "none";
-      stopBtn.style.display = "inline-flex";
-      if (selectAllCb) selectAllCb.disabled = true;
-    } else {
-      folderBtn.style.display = "inline-flex";
-      if (protectBtn) protectBtn.style.display = "inline-flex";
-      if (exportBtn) exportBtn.style.display = "inline-flex";
-      deleteBtn.style.display = "inline-flex";
-      stopBtn.style.display = "none";
-      if (selectAllCb) selectAllCb.disabled = false;
-      if (selectAllCb) {
-        const rowCbs = document.querySelectorAll(".gcm-chat-row .gcm-checkbox:not(#gcm-select-all)");
-        let visibleTotal = 0;
-        let visibleChecked = 0;
-        rowCbs.forEach((cb) => {
-          const r = cb.closest(".gcm-chat-row") || cb.parentElement;
-          if (!r || r.classList.contains("gcm-hidden-by-filter")) return;
-          visibleTotal++;
-          if (selectedMap.has(cb.dataset.convId)) visibleChecked++;
-        });
-        const allChecked = visibleTotal > 0 && visibleChecked === visibleTotal;
-        if (selectAllCb.checked !== allChecked) selectAllCb.checked = allChecked;
-        selectAllCb.classList.toggle("gcm-checked", allChecked);
-        selectAllCb.indeterminate = visibleChecked > 0 && !allChecked;
-      }
-      const count = selectedMap.size;
-      folderBtn.disabled = count === 0;
-      const fText = t().folderBtn(count);
-      if (folderBtn.dataset.label !== fText) {
-        folderBtn.dataset.label = fText;
-        setButtonIconText(folderBtn, ICONS.folder, fText);
-      }
-      if (protectBtn) {
-        protectBtn.disabled = count === 0;
-      }
-      deleteBtn.disabled = count === 0;
-      const dText = t().deleteBtn(count);
-      if (deleteBtn.dataset.label !== dText) {
-        deleteBtn.dataset.label = dText;
-        setButtonIconText(deleteBtn, ICONS.trash, dText);
-      }
-    }
-  }
-
-  // src/selection.js
-  function toggleProtectSelected() {
-    const ids = Array.from(selectedMap.keys());
-    if (ids.length === 0) return;
-    const allAlreadyProtected = ids.every((id) => !!state.folderState.protectedIds[id]);
-    ids.forEach((id) => {
-      if (allAlreadyProtected) {
-        delete state.folderState.protectedIds[id];
-      } else {
-        state.folderState.protectedIds[id] = true;
-      }
-    });
-    saveFolderData(state.folderState);
-    clearAllSelections();
-    refreshUI();
-    updateStatusToast(
-      allAlreadyProtected ? t().toastUnprotected(ids.length) : t().toastProtected(ids.length),
-      null,
-      null,
-      3e3
-    );
-  }
-  function clearAllSelections() {
-    selectedMap.clear();
-    const sidebar = getSidebarElement() || document;
-    sidebar.querySelectorAll(".gcm-checkbox").forEach((cb) => {
-      cb.checked = false;
-      cb.classList.remove("gcm-checked");
-    });
-    sidebar.querySelectorAll(".gcm-chat-row.gcm-selected").forEach((r) => r.classList.remove("gcm-selected"));
-    const selectAllCb = document.getElementById("gcm-select-all");
-    if (selectAllCb) {
-      selectAllCb.checked = false;
-      selectAllCb.classList.remove("gcm-checked");
-    }
-  }
-  function toggleMoveToFolderPopover(anchorBtn) {
-    const existing = document.getElementById("gcm-folder-popover");
-    if (existing) {
-      existing.remove();
-      return;
-    }
-    const rect = anchorBtn.getBoundingClientRect();
-    const popover = document.createElement("div");
-    popover.id = "gcm-folder-popover";
-    popover.style.top = `${rect.bottom + 8}px`;
-    popover.style.left = `${Math.max(12, rect.left - 30)}px`;
-    state.folderState.folders.forEach((f) => {
-      const item = document.createElement("button");
-      item.className = "gcm-popover-item";
-      const dot = document.createElement("span");
-      dot.className = "gcm-folder-dot";
-      dot.style.backgroundColor = f.color;
-      dot.style.color = f.color;
-      const txt = document.createElement("span");
-      txt.textContent = f.name;
-      item.appendChild(dot);
-      item.appendChild(txt);
-      item.addEventListener("click", () => {
-        assignSelectedToFolder(f.id);
-        popover.remove();
-      });
-      popover.appendChild(item);
-    });
-    const divider = document.createElement("div");
-    divider.className = "gcm-popover-divider";
-    popover.appendChild(divider);
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "gcm-popover-item";
-    setButtonIconText(removeBtn, ICONS.folderMinus, t().removeFromFolder);
-    removeBtn.addEventListener("click", () => {
-      assignSelectedToFolder(null);
-      popover.remove();
-    });
-    popover.appendChild(removeBtn);
-    const createNewBtn = document.createElement("button");
-    createNewBtn.className = "gcm-popover-item";
-    createNewBtn.style.color = "#a8c7fa";
-    setButtonIconText(createNewBtn, ICONS.folderPlus, t().createNewFolderMenu);
-    createNewBtn.addEventListener("click", () => {
-      popover.remove();
-      openCreateFolderModal((newFolder) => {
-        assignSelectedToFolder(newFolder.id);
-      });
-    });
-    popover.appendChild(createNewBtn);
-    document.body.appendChild(popover);
-    const closeOnOutside = (e) => {
-      if (!popover.contains(e.target) && e.target !== anchorBtn) {
-        popover.remove();
-        document.removeEventListener("mousedown", closeOnOutside);
-      }
-    };
-    setTimeout(() => document.addEventListener("mousedown", closeOnOutside), 20);
-  }
-  function assignSelectedToFolder(folderId) {
-    const ids = Array.from(selectedMap.keys());
-    if (ids.length === 0) return;
-    ids.forEach((convId) => {
-      if (folderId) {
-        state.folderState.assignments[convId] = folderId;
-      } else {
-        delete state.folderState.assignments[convId];
-      }
-    });
-    saveFolderData(state.folderState);
-    clearAllSelections();
-    refreshUI();
-    updateStatusToast(
-      folderId ? t().toastMovedToFolder(ids.length) : t().toastRemovedFromFolder(ids.length),
-      null,
-      null,
-      2500
-    );
-  }
-  function setupDelegatedSidebarListener() {
-    const stopPressOnControls = (e) => {
-      const target = e.target;
-      if (!(target instanceof Element)) return;
-      if (target.classList.contains("gcm-checkbox") || target.closest(".gcm-lock-icon")) {
-        e.stopPropagation();
-        if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
-        if (e.type === "mousedown" && target.id !== "gcm-select-all") {
-          e.preventDefault();
-        }
-      }
-    };
-    document.addEventListener("pointerdown", stopPressOnControls, true);
-    document.addEventListener("mousedown", stopPressOnControls, true);
-    document.addEventListener("pointerup", stopPressOnControls, true);
-    document.addEventListener("mouseup", stopPressOnControls, true);
-    document.addEventListener(
-      "click",
-      (e) => {
-        const target = e.target;
-        if (!(target instanceof Element)) return;
-        const lockTarget = target.closest(".gcm-lock-icon");
-        if (lockTarget) {
-          e.stopPropagation();
-          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
-          e.preventDefault();
-          const id = lockTarget.dataset.convId;
-          if (id) {
-            delete state.folderState.protectedIds[id];
-            saveFolderData(state.folderState);
-            refreshUI();
-          }
-          return;
-        }
-        if (target.classList.contains("gcm-checkbox") && target.id !== "gcm-select-all") {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
-          const checkbox = target;
-          const id = checkbox.dataset.convId;
-          const row = checkbox.closest(".gcm-chat-row") || checkbox.parentElement;
-          if (!id || !row) return;
-          const willBeChecked = !selectedMap.has(id);
-          const applyCbState = (cb, r, cbId, state2) => {
-            cb.checked = state2;
-            cb.classList.toggle("gcm-checked", state2);
-            if (state2) {
-              selectedMap.set(cbId, { id: cbId });
-              r.classList.add("gcm-selected");
-            } else {
-              selectedMap.delete(cbId);
-              r.classList.remove("gcm-selected");
-            }
-          };
-          const sidebar = getSidebarElement() || document;
-          const visibleCheckboxes = Array.from(
-            sidebar.querySelectorAll(".gcm-checkbox:not(#gcm-select-all)")
-          ).filter((cb) => {
-            const r = cb.closest(".gcm-chat-row") || cb.parentElement;
-            return r && !r.classList.contains("gcm-hidden-by-filter");
-          });
-          if (e.shiftKey && state.lastCheckedCheckbox && state.lastCheckedCheckbox !== checkbox) {
-            const start = visibleCheckboxes.indexOf(state.lastCheckedCheckbox);
-            const end = visibleCheckboxes.indexOf(checkbox);
-            if (start !== -1 && end !== -1) {
-              const [low, high] = [Math.min(start, end), Math.max(start, end)];
-              for (let i = low; i <= high; i++) {
-                const cb = visibleCheckboxes[i];
-                const cbId = cb.dataset.convId;
-                const cbRow = cb.closest(".gcm-chat-row") || cb.parentElement;
-                if (cbId && cbRow) {
-                  applyCbState(cb, cbRow, cbId, willBeChecked);
-                }
-              }
-            } else {
-              applyCbState(checkbox, row, id, willBeChecked);
-            }
-          } else {
-            applyCbState(checkbox, row, id, willBeChecked);
-          }
-          const syncNativeChecked = () => {
-            visibleCheckboxes.forEach((cb) => {
-              const cbId = cb.dataset.convId;
-              if (cbId) {
-                const st = selectedMap.has(cbId);
-                cb.checked = st;
-                cb.classList.toggle("gcm-checked", st);
-              }
-            });
-          };
-          if (typeof queueMicrotask === "function") queueMicrotask(syncNativeChecked);
-          setTimeout(syncNativeChecked, 0);
-          state.lastCheckedCheckbox = checkbox;
-          updateToolbarState();
-        }
-      },
-      true
-    );
-  }
-  function injectCheckboxes(items) {
-    for (let i = 0; i < items.length; i++) {
-      const { id, row } = items[i];
-      if (!row.classList.contains("gcm-chat-row")) {
-        row.classList.add("gcm-chat-row");
-      }
-      const isSelected = selectedMap.has(id);
-      const existingCb = row.querySelector(".gcm-checkbox");
-      if (existingCb) {
-        if (existingCb.dataset.convId !== id) existingCb.dataset.convId = id;
-        if (existingCb.checked !== isSelected) existingCb.checked = isSelected;
-        existingCb.classList.toggle("gcm-checked", isSelected);
-        row.classList.toggle("gcm-selected", isSelected);
-        continue;
-      }
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "gcm-checkbox" + (isSelected ? " gcm-checked" : "");
-      checkbox.title = t().checkboxTitle;
-      checkbox.dataset.convId = id;
-      checkbox.checked = isSelected;
-      row.classList.toggle("gcm-selected", isSelected);
-      row.prepend(checkbox);
-    }
-  }
-  function toggleSelectAll(checked) {
-    const selectAllCb = document.getElementById("gcm-select-all");
-    if (selectAllCb) {
-      selectAllCb.checked = checked;
-      selectAllCb.classList.toggle("gcm-checked", checked);
-    }
-    const sidebar = getSidebarElement() || document;
-    const checkboxes = Array.from(sidebar.querySelectorAll(".gcm-checkbox:not(#gcm-select-all)")).filter((cb) => {
-      const r = cb.closest(".gcm-chat-row") || cb.parentElement;
-      return r && !r.classList.contains("gcm-hidden-by-filter");
-    });
-    checkboxes.forEach((cb) => {
-      cb.checked = checked;
-      cb.classList.toggle("gcm-checked", checked);
-      const id = cb.dataset.convId;
-      const row = cb.closest(".gcm-chat-row") || cb.parentElement;
-      if (id && row) {
-        if (checked) {
-          selectedMap.set(id, { id });
-          row.classList.add("gcm-selected");
-        } else {
-          selectedMap.delete(id);
-          row.classList.remove("gcm-selected");
-        }
-      }
-    });
-    updateToolbarState();
   }
 
   // src/main.js

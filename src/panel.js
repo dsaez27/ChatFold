@@ -9,6 +9,7 @@ import { openPromptsModal } from './prompts.js';
 import { getConversationRows } from './sidebar.js';
 import { BUILTIN_FILTERS, autoClassifiedVisited, saveView, state, t } from './state.js';
 import { initCloudSync, normalizeStoredState, saveFolderData } from './storage.js';
+import { applyToolbarLayout, clampToolbarPosition } from './toolbar.js';
 
 function toggleLanguage() {
   state.folderState.lang = state.folderState.lang === 'es' ? 'en' : 'es';
@@ -228,7 +229,12 @@ function enablePanelDrag(box, handle) {
 
 export function registerGlobalListeners() {
   const applyExternalState = (incoming) => {
-    const keepView = { filter: state.activeFolderFilter, sort: state.sortMode, toolbarCollapsed: state.toolbarCollapsed };
+    const keepView = {
+      filter: state.activeFolderFilter,
+      sort: state.sortMode,
+      toolbarCollapsed: state.toolbarCollapsed,
+      toolbarVertical: state.toolbarVertical
+    };
     const langChanged = incoming.lang !== state.folderState.lang;
     state.folderState = { ...incoming, view: keepView };
     if (!BUILTIN_FILTERS.includes(state.activeFolderFilter) && !state.folderState.folders.some((f) => f.id === state.activeFolderFilter)) {
@@ -244,6 +250,7 @@ export function registerGlobalListeners() {
         box.classList.toggle('gcm-minimized', state.folderState.minimized);
         clampBoxPosition(box);
       }
+      applyToolbarLayout();
       const pills = document.getElementById('gcm-pills-container');
       if (pills) delete pills.dataset.sig;
     }
@@ -309,7 +316,10 @@ export function registerGlobalListeners() {
     }
   } catch (_) {}
 
-  window.addEventListener('resize', () => clampBoxPosition(document.getElementById('gcm-folders-box')));
+  window.addEventListener('resize', () => {
+    clampBoxPosition(document.getElementById('gcm-folders-box'));
+    clampToolbarPosition(document.getElementById('gcm-toolbar'));
+  });
 }
 
 function buildFoldersPanelDOM(box) {

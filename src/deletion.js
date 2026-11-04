@@ -55,20 +55,24 @@ function findOptionsTrigger(row, link, isTask = false) {
   if (row.nextElementSibling && countConvLinks(row.nextElementSibling) === 0) {
     scopes.push(row.nextElementSibling);
   }
+  const allowArchiveBtn = isTask || PLATFORM_KEY === 'chatgpt';
   const prioritySelectors =
     PLATFORM_KEY === 'chatgpt'
       ? [
           'button[data-testid^="history-item-"][data-testid$="-options"]',
           'button[data-testid*="options"]',
           'button[aria-haspopup="menu"]',
-          'button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]'
+          'button[data-trailing-button]',
+          'button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',
+          'button[aria-label*="rchiv"], button[title*="rchiv"], button[data-testid*="archive"]',
+          'button:not(.gcm-checkbox)'
         ]
       : [SELECTORS.optionsTrigger];
 
   for (const sel of prioritySelectors) {
     for (const scope of scopes) {
       const candidates = Array.from(scope.querySelectorAll(sel));
-      const valid = candidates.find((b) => !isPinOrArchiveButton(b, isTask));
+      const valid = candidates.find((b) => !b.classList?.contains('gcm-checkbox') && !isPinOrArchiveButton(b, allowArchiveBtn));
       if (valid) return valid;
     }
   }
@@ -87,16 +91,16 @@ function removeDeletedRowFromDOM(row, targetId) {
   const parentLi = row.closest('li');
   if (parentLi && isSingleRowContainer(parentLi)) {
     containerToRemove = parentLi;
-  } else {
-    let p = row.parentElement;
-    while (p && p !== document.body && p.tagName !== 'NAV' && p.tagName !== 'OL' && p.tagName !== 'UL') {
-      if (isSingleRowContainer(p) && !p.classList.contains('conversations-container')) {
-        containerToRemove = p;
-        p = p.parentElement;
-      } else {
-        break;
-      }
-    }
+  } else if (
+    row.parentElement &&
+    row.parentElement !== document.body &&
+    row.parentElement.tagName === 'DIV' &&
+    isSingleRowContainer(row.parentElement) &&
+    (row.parentElement.classList.contains('group') ||
+      row.parentElement.hasAttribute('data-sidebar-chatgpt-conversation-key') ||
+      (row.parentElement.getAttribute('data-testid') || '').startsWith('history-item'))
+  ) {
+    containerToRemove = row.parentElement;
   }
 
   const parentList = containerToRemove.parentElement;
@@ -159,23 +163,84 @@ async function getChatGptToken(forceRefresh = false) {
   return state.cachedChatGptToken;
 }
 
-function hideChatGptConversation(targetId, token) {
-  return fetch(`/backend-api/conversation/${targetId}`, {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ is_visible: false })
-  });
+function getCookieValue(name) {
+  try {
+    const m = (document.cookie || '').match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch (_) {
+    return null;
+  }
 }
 
-async function deleteOrArchiveRemoteTaskApi(targetId, token) {
+function buildChatGptHeaders(token, includeAccount = true) {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`
   };
+  if (includeAccount) {
+    const accountId = getCookieValue('_account');
+    if (accountId && accountId !== 'personal') {
+      headers['ChatGPT-Account-Id'] = accountId;
+    }
+  }
+  const deviceId = getCookieValue('oai-did') || (typeof localStorage !== 'undefined' && localStorage.getItem?.('oai-did'));
+  if (deviceId) {
+    headers['OAI-Device-Id'] = deviceId;
+  }
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    headers['OAI-Language'] = navigator.language;
+  }
+  return headers;
+}
+
+async function hideChatGptConversation(targetId, token) {
+  const headers = buildChatGptHeaders(token, true);
+  // 1) PATCH estándar { is_visible: false }
+  let lastRes = await fetch(`/backend-api/conversation/${targetId}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers,
+    body: JSON.stringify({ is_visible: false })
+  });
+  if (lastRes.ok || lastRes.status === 401) return lastRes;
+
+  // Si había cookie de workspace (_account) pero el chat es personal, reintentar sin ChatGPT-Account-Id
+  if (headers['ChatGPT-Account-Id']) {
+    const personalRes = await fetch(`/backend-api/conversation/${targetId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: buildChatGptHeaders(token, false),
+      body: JSON.stringify({ is_visible: false })
+    });
+    if (personalRes.ok || personalRes.status === 401) return personalRes;
+    lastRes = personalRes;
+  }
+
+  // 2) Fallback: DELETE directo o archivar por si es un hilo especial (Gizmo / Proyecto)
+  try {
+    const delRes = await fetch(`/backend-api/conversation/${targetId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers
+    });
+    if (delRes.ok) return delRes;
+  } catch (_) {}
+
+  try {
+    const archRes = await fetch(`/backend-api/conversation/${targetId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ is_archived: true })
+    });
+    if (archRes.ok) return archRes;
+  } catch (_) {}
+
+  return lastRes;
+}
+
+async function deleteOrArchiveRemoteTaskApi(targetId, token) {
+  const headers = buildChatGptHeaders(token, true);
   // 1) Intentar DELETE directo de la tarea remota (/backend-api/wham/tasks/{id})
   try {
     const delRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
@@ -183,11 +248,11 @@ async function deleteOrArchiveRemoteTaskApi(targetId, token) {
       credentials: 'include',
       headers
     });
-    if (delRes.ok) return delRes;
-    if (delRes.status === 401 || delRes.status === 403) return delRes;
+    if (delRes.ok || delRes.status === 401) return delRes;
   } catch (_) {}
 
   // 2) Fallback: archivar la tarea remota (/backend-api/wham/tasks/{id}/archive) y luego intentar DELETE
+  // Nota: en Codex muchas tareas devuelven 403/405 al hacer DELETE directo pero permiten POST /archive.
   try {
     const archRes = await fetch(`/backend-api/wham/tasks/${targetId}/archive`, {
       method: 'POST',
@@ -204,10 +269,21 @@ async function deleteOrArchiveRemoteTaskApi(targetId, token) {
       } catch (_) {}
       return archRes;
     }
-    if (archRes.status === 401 || archRes.status === 403) return archRes;
+    if (archRes.status === 401) return archRes;
   } catch (_) {}
 
-  // 3) Segundo fallback para tareas programadas estándar (/backend-api/tasks/{id})
+  // 3) Segundo fallback: PATCH de tarea remota (/backend-api/wham/tasks/{id})
+  try {
+    const patchRes = await fetch(`/backend-api/wham/tasks/${targetId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ archived: true, is_archived: true, is_visible: false })
+    });
+    if (patchRes.ok || patchRes.status === 401) return patchRes;
+  } catch (_) {}
+
+  // 4) Tercer fallback para tareas programadas estándar (/backend-api/tasks/{id})
   return fetch(`/backend-api/tasks/${targetId}`, {
     method: 'DELETE',
     credentials: 'include',
@@ -221,21 +297,28 @@ async function deleteChatGptViaApi(targetId, row, isTask = false) {
     let token = await getChatGptToken();
     if (!token) return false;
 
-    const runCall = (tk) =>
+    const runPrimary = (tk) =>
       isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
+    const runSecondary = (tk) =>
+      isTask ? hideChatGptConversation(targetId, tk) : deleteOrArchiveRemoteTaskApi(targetId, tk);
 
-    let res = await runCall(token);
+    let res = await runPrimary(token);
     // Token vencido: pedir uno nuevo y reintentar una sola vez.
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       token = await getChatGptToken(true);
       if (!token) return false;
-      res = await runCall(token);
+      res = await runPrimary(token);
+    }
+
+    if (!res.ok) {
+      const secRes = await runSecondary(token);
+      if (secRes?.ok) res = secRes;
     }
 
     if (res.ok) {
       removeDeletedRowFromDOM(row, targetId);
       cleanupEmptySidebarItems();
-      await sleep(220);
+      await sleep(160);
       return true;
     }
   } catch (_) {}
@@ -244,17 +327,19 @@ async function deleteChatGptViaApi(targetId, row, isTask = false) {
 
 async function deleteSingleConversation(targetId) {
   const found = findRowById(targetId);
-  if (!found) return false;
-
-  const { row, link } = found;
+  const row = found?.row || null;
+  const link = found?.link || null;
   const isTask = isRemoteTask(targetId, link);
 
-  // Para tareas remotas de ChatGPT/Codex (task_...), la API directa (/backend-api/wham/tasks)
-  // permite borrar o archivar en un solo paso sin que falle por ausencia del botón "Eliminar" en el menú.
-  if (PLATFORM_KEY === 'chatgpt' && isTask) {
-    const apiTaskOk = await deleteChatGptViaApi(targetId, row, true);
-    if (apiTaskOk) return true;
+  // En ChatGPT (tanto conversaciones normales como GPTs personalizados, proyectos y tareas remotas),
+  // intentar primero el borrado directo vía API: es instantáneo, no falla con los últimos chats al fondo
+  // del scroll ni con filas virtualizadas fuera del DOM, y cae a clic DOM si la API no responde ok.
+  if (PLATFORM_KEY === 'chatgpt') {
+    const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
+    if (apiOk) return true;
   }
+
+  if (!found) return false;
 
   row.scrollIntoView({ block: 'center' });
   await sleep(180);
@@ -265,7 +350,23 @@ async function deleteSingleConversation(targetId) {
       throw new Error('Options menu button not found.');
     }
 
+    const triggerLabel = (
+      (trigger.getAttribute?.('aria-label') || '') +
+      ' ' +
+      (trigger.getAttribute?.('title') || '') +
+      ' ' +
+      (trigger.getAttribute?.('data-testid') || '')
+    ).toLowerCase();
+    const isDirectArchiveBtn = triggerLabel.includes('archiv') && !trigger.getAttribute?.('aria-haspopup');
+
     realClick(trigger);
+
+    if (isDirectArchiveBtn) {
+      await sleep(450);
+      removeDeletedRowFromDOM(row, targetId);
+      cleanupEmptySidebarItems();
+      return true;
+    }
 
     const menu = await pollUntil(
       () => Array.from(document.querySelectorAll(SELECTORS.menuPanel)).find(isActiveOverlay),
@@ -273,11 +374,17 @@ async function deleteSingleConversation(targetId) {
     );
     if (!menu) {
       // Si el botón era un botón directo de Archivar (sin submenú) en una tarea remota:
-      if (isTask) {
+      if (isTask || PLATFORM_KEY === 'chatgpt') {
         await sleep(450);
-        removeDeletedRowFromDOM(row, targetId);
-        cleanupEmptySidebarItems();
-        return true;
+        if (!row.isConnected) {
+          cleanupEmptySidebarItems();
+          return true;
+        }
+        if (isTask) {
+          removeDeletedRowFromDOM(row, targetId);
+          cleanupEmptySidebarItems();
+          return true;
+        }
       }
       throw new Error('Menu did not open.');
     }
@@ -285,29 +392,38 @@ async function deleteSingleConversation(targetId) {
     await sleep(180);
 
     const menuItems = Array.from(menu.querySelectorAll(SELECTORS.deleteMenuItem));
-    const deleteBtn = menuItems.find((el) => {
+    const allowArchiveMenu = isTask || PLATFORM_KEY === 'chatgpt';
+    let deleteBtn = menuItems.find((el) => {
       const txt = (el.textContent || '').toLowerCase();
       const testId = (el.getAttribute('data-testid') || '').toLowerCase();
       const cls = typeof el.className === 'string' ? el.className.toLowerCase() : '';
       return (
         testId.includes('delete') ||
-        (isTask && testId.includes('archive')) ||
         cls.includes('text-danger') ||
         cls.includes('text-token-text-error') ||
         cls.includes('text-red') ||
         txt.includes('eliminar') ||
         txt.includes('delete') ||
         txt.includes('borrar') ||
-        (isTask && (txt.includes('archivar') || txt.includes('archive'))) ||
         el.querySelector('mat-icon[fonticon="delete"], mat-icon[data-mat-icon-name="delete"]')
       );
     });
+    if (!deleteBtn && allowArchiveMenu) {
+      deleteBtn = menuItems.find((el) => {
+        const txt = (el.textContent || '').toLowerCase();
+        const testId = (el.getAttribute('data-testid') || '').toLowerCase();
+        return testId.includes('archive') || txt.includes('archivar') || txt.includes('archive');
+      });
+    }
 
     if (!deleteBtn) {
       throw new Error('Delete option not found.');
     }
 
-    const isArchiveAction = isTask && ((deleteBtn.textContent || '').toLowerCase().includes('archiv') || (deleteBtn.getAttribute('data-testid') || '').toLowerCase().includes('archive'));
+    const isArchiveAction =
+      allowArchiveMenu &&
+      ((deleteBtn.textContent || '').toLowerCase().includes('archiv') ||
+        (deleteBtn.getAttribute('data-testid') || '').toLowerCase().includes('archive'));
     realClick(deleteBtn);
 
     const dialog = await pollUntil(
@@ -315,7 +431,7 @@ async function deleteSingleConversation(targetId) {
       isArchiveAction ? 1000 : 2200
     );
     if (!dialog) {
-      // Archivar una tarea remota que ya terminó no suele pedir diálogo de confirmación
+      // Archivar una tarea o conversación no suele pedir diálogo de confirmación
       if (isArchiveAction) {
         await sleep(450);
         removeDeletedRowFromDOM(row, targetId);

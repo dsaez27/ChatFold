@@ -40,12 +40,17 @@ for (const platform of ['gemini', 'chatgpt', 'claude', 'deepseek', 'opencode']) 
     w.close();
   });
 
-  test(`${platform}: la barra superior se contrae y recuerda su estado`, async () => {
+  test(`${platform}: la barra superior se contrae, cambia entre horizontal/vertical y recuerda su estado`, async () => {
     const w = loadExtension(bundle, platform);
     await sleep(1100);
+    click(w, $(w, '#gcm-toolbar-orient'));
+    assert.ok($(w, '#gcm-toolbar').classList.contains('gcm-vertical'), 'modo vertical activado');
+    let data = JSON.parse(w.localStorage.getItem(STORAGE_KEYS[platform]));
+    assert.equal(data.view.toolbarVertical, true);
+
     click(w, $(w, '#gcm-toolbar-toggle'));
     assert.ok($(w, '#gcm-toolbar').classList.contains('gcm-collapsed'));
-    const data = JSON.parse(w.localStorage.getItem(STORAGE_KEYS[platform]));
+    data = JSON.parse(w.localStorage.getItem(STORAGE_KEYS[platform]));
     assert.equal(data.view.toolbarCollapsed, true);
     w.close();
   });
@@ -122,6 +127,35 @@ test('chatgpt: detecta y borra tareas remotas (/codex/tasks/task_...) via API', 
   click(w, confirmBtn);
   await sleep(600);
   assert.ok(calledUrls.includes('/backend-api/wham/tasks/task_e_ccccc33333'), 'llamó al endpoint de borrado de tareas remotas');
+  assert.equal($(w, 'a[href*="/codex/tasks/task_e_ccccc33333"]'), null, 'fila eliminada del DOM');
+  w.close();
+});
+
+test('chatgpt: si DELETE de tarea remota devuelve 403, usa fallback POST /archive y elimina la fila', async () => {
+  const w = loadExtension(bundle, 'chatgpt');
+  const calledUrls = [];
+  w.fetch = async (url, init) => {
+    calledUrls.push(`${init?.method || 'GET'} ${url}`);
+    if (url === '/api/auth/session') {
+      return { ok: true, status: 200, json: async () => ({ accessToken: 'tok_test_123' }) };
+    }
+    if (url === '/backend-api/wham/tasks/task_e_ccccc33333' && init?.method === 'DELETE') {
+      return { ok: false, status: 403 };
+    }
+    if (url === '/backend-api/wham/tasks/task_e_ccccc33333/archive' && init?.method === 'POST') {
+      return { ok: true, status: 200 };
+    }
+    return { ok: false, status: 404 };
+  };
+  await sleep(1100);
+  const taskCb = $(w, '.gcm-checkbox[data-conv-id="task_e_ccccc33333"]');
+  click(w, taskCb);
+  await sleep(100);
+  click(w, $(w, '#gcm-delete-btn'));
+  await sleep(150);
+  click(w, $(w, '#gcm-modal-overlay .gcm-btn-danger'));
+  await sleep(600);
+  assert.ok(calledUrls.includes('POST /backend-api/wham/tasks/task_e_ccccc33333/archive'), 'usó fallback /archive tras 403 en DELETE');
   assert.equal($(w, 'a[href*="/codex/tasks/task_e_ccccc33333"]'), null, 'fila eliminada del DOM');
   w.close();
 });

@@ -36,6 +36,11 @@ export function parseConvId(el) {
       return id;
     } catch (_) {}
   }
+  const keyHolder = el.closest?.('[data-sidebar-chatgpt-conversation-key]');
+  if (keyHolder) {
+    const key = keyHolder.getAttribute('data-sidebar-chatgpt-conversation-key');
+    if (key) return key;
+  }
   return null;
 }
 
@@ -110,25 +115,30 @@ function findRowContainer(el) {
 
 export function getConversationRows() {
   const sidebar = getSidebarElement();
-  const root = sidebar || (PLATFORM_KEY !== 'gemini' ? document : null);
+  // En ChatGPT puede haber múltiples contenedores laterales (<nav>, <aside>, flyout de proyectos/tareas):
+  // consultar en `document` (excluyendo <main> y nodos propios de ChatFold) garantiza detectar todos los chats.
+  const root = PLATFORM_KEY === 'chatgpt' ? document : sidebar || (PLATFORM_KEY !== 'gemini' ? document : null);
   if (!root) return [];
 
   const candidates = root.querySelectorAll(SELECTORS.conversationLinks);
   const rows = [];
   const seenRows = new Set();
+  const seenIds = new Set();
 
   for (let i = 0; i < candidates.length; i++) {
     const el = candidates[i];
-    // Descartar cualquier enlace que esté dentro del área de mensajes principal (<main>)
+    // Descartar cualquier enlace que esté dentro del área de mensajes principal (<main>) o de la UI de ChatFold
     if (PLATFORM_KEY !== 'gemini' && el.closest('main')) continue;
+    if (el.closest('[id^="gcm-"]')) continue;
 
     const id = parseConvId(el);
-    if (!id) continue;
+    if (!id || seenIds.has(id)) continue;
 
     const row = findRowContainer(el);
 
     if (!seenRows.has(row)) {
       seenRows.add(row);
+      seenIds.add(id);
       rows.push({
         id,
         row,

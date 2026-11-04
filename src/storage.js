@@ -36,11 +36,16 @@ export function normalizeStoredState(parsed, defaultLang) {
       parsed.pos && Number.isFinite(parsed.pos.left) && Number.isFinite(parsed.pos.bottom)
         ? { left: parsed.pos.left, bottom: parsed.pos.bottom }
         : null,
-    // Última vista usada (filtro y orden) para retomarla tras recargar la página.
+    toolbarPos:
+      parsed.toolbarPos && Number.isFinite(parsed.toolbarPos.left) && Number.isFinite(parsed.toolbarPos.top)
+        ? { left: parsed.toolbarPos.left, top: parsed.toolbarPos.top }
+        : null,
+    // Última vista usada (filtro, orden y disposición de la barra) para retomarla tras recargar la página.
     view: {
       filter: typeof parsed.view?.filter === 'string' ? parsed.view.filter : 'ALL',
       sort: ['DEFAULT', 'AZ', 'ZA'].includes(parsed.view?.sort) ? parsed.view.sort : 'DEFAULT',
-      toolbarCollapsed: !!parsed.view?.toolbarCollapsed
+      toolbarCollapsed: !!parsed.view?.toolbarCollapsed,
+      toolbarVertical: !!parsed.view?.toolbarVertical
     }
   };
 }
@@ -64,7 +69,8 @@ export function loadFolderData() {
     protectedIds: {},
     minimized: false,
     pos: null,
-    view: { filter: 'ALL', sort: 'DEFAULT', toolbarCollapsed: false }
+    toolbarPos: null,
+    view: { filter: 'ALL', sort: 'DEFAULT', toolbarCollapsed: false, toolbarVertical: false }
   };
   saveFolderData(initial);
   return initial;
@@ -77,7 +83,7 @@ export function saveFolderData(data) {
 
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync?.set) {
-      const { pos: _pos, view: _view, ...syncPayload } = data;
+      const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...syncPayload } = data;
       chrome.storage.sync.set({ [P.storageKey]: syncPayload });
     }
   } catch (_) {}
@@ -97,13 +103,13 @@ export function initCloudSync(getState, applyIncoming) {
         const current = getState();
         if (cloudData && typeof cloudData === 'object') {
           const merged = normalizeStoredState(
-            { ...cloudData, pos: current.pos, view: current.view },
+            { ...cloudData, pos: current.pos, toolbarPos: current.toolbarPos, view: current.view },
             current.lang
           );
           localStorage.setItem(P.storageKey, JSON.stringify(merged));
           applyIncoming(merged);
         } else {
-          const { pos: _pos, view: _view, ...syncPayload } = current;
+          const { pos: _pos, toolbarPos: _toolbarPos, view: _view, ...syncPayload } = current;
           chrome.storage.sync.set({ [P.storageKey]: syncPayload });
         }
       } catch (_) {}
@@ -115,7 +121,7 @@ export function initCloudSync(getState, applyIncoming) {
         try {
           const current = getState();
           const merged = normalizeStoredState(
-            { ...changes[P.storageKey].newValue, pos: current.pos, view: current.view },
+            { ...changes[P.storageKey].newValue, pos: current.pos, toolbarPos: current.toolbarPos, view: current.view },
             current.lang
           );
           localStorage.setItem(P.storageKey, JSON.stringify(merged));

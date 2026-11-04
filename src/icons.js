@@ -195,6 +195,22 @@ export const ICONS = {
     strokeSvg(13.5, 2.3, [
       el('path', { d: 'M5 12h14' }),
       el('path', { d: 'M12 5v14' })
+    ]),
+
+  layoutVertical: () =>
+    strokeSvg(13.5, 2.1, [
+      el('rect', { width: 10, height: 18, x: 7, y: 3, rx: 2 }),
+      el('path', { d: 'M10 7h4' }),
+      el('path', { d: 'M10 12h4' }),
+      el('path', { d: 'M10 17h4' })
+    ]),
+
+  layoutHorizontal: () =>
+    strokeSvg(13.5, 2.1, [
+      el('rect', { width: 18, height: 10, x: 3, y: 7, rx: 2 }),
+      el('path', { d: 'M7 10v4' }),
+      el('path', { d: 'M12 10v4' }),
+      el('path', { d: 'M17 10v4' })
     ])
 };
 

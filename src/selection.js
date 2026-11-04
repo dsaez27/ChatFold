@@ -106,6 +106,13 @@ export function toggleMoveToFolderPopover(anchorBtn) {
   popover.appendChild(createNewBtn);
 
   document.body.appendChild(popover);
+  const popRect = popover.getBoundingClientRect();
+  const clampedLeft = Math.min(Math.max(12, rect.left - 30), Math.max(12, window.innerWidth - popRect.width - 12));
+  const preferTop = rect.bottom + 8 + popRect.height > window.innerHeight - 12 && rect.top - popRect.height - 8 >= 12
+    ? rect.top - popRect.height - 8
+    : Math.min(rect.bottom + 8, Math.max(12, window.innerHeight - popRect.height - 12));
+  popover.style.left = `${clampedLeft}px`;
+  popover.style.top = `${preferTop}px`;
 
   const closeOnOutside = (e) => {
     if (!popover.contains(e.target) && e.target !== anchorBtn) {

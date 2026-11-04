@@ -53,12 +53,12 @@ export const PLATFORMS = {
     name: 'ChatGPT',
     storageKey: 'gcm_chatgpt_folders_data_v1',
     legacyStorageKey: null,
-    convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{5,})/,
+    convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{4,})/,
     buildUrl: (id) => (id.startsWith('task_') ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`),
     selectors: {
       sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
       conversationLinks:
-        '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/task_"]',
+        '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"]',
       rowClosest: [
         '[data-sidebar-chatgpt-conversation-key]',
         'li[data-testid^="history-item"]',
