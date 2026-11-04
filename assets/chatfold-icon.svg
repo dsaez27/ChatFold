@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="2048" height="2048">
+  <defs>
+    <linearGradient id="cfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B6EF7" />
+      <stop offset="50%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1DA1F2" />
+    </linearGradient>
+  </defs>
+  <!-- Main Speech Bubble with Folded Top-Right Corner -->
+  <path d="M 280 120
+           L 590 120
+           L 844 374
+           L 844 630
+           A 170 170 0 0 1 674 800
+           L 455 800
+           L 295 940
+           L 295 800
+           L 280 800
+           A 170 170 0 0 1 110 630
+           L 110 290
+           A 170 170 0 0 1 280 120 Z"
+        fill="url(#cfGrad)" />
+  <!-- Folded Flap -->
+  <path d="M 590 120
+           L 844 374
+           L 690 374
+           A 100 100 0 0 1 590 274
+           Z"
+        fill="#132238" />
+  <!-- Chat Lines -->
+  <rect x="275" y="405" width="315" height="62" rx="31" fill="#FFFFFF" />
+  <rect x="275" y="535" width="415" height="62" rx="31" fill="#CBE7FB" />
+</svg>
