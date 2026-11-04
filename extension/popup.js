@@ -6,18 +6,39 @@ const PLATFORM_LIST = [
   { key: 'opencode', name: 'OpenCode AI', host: 'opencode.ai', url: 'https://opencode.ai/', storageKey: 'gcm_opencode_folders_data_v1', color: '#a142f4' }
 ];
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag, attrs = {}, children = []) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    node.setAttribute(k, String(v));
+  }
+  for (const c of children) {
+    node.appendChild(c);
+  }
+  return node;
+}
+
 const POPUP_ICONS = {
-  folder: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`,
-  chat: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>`,
-  lock: `<svg viewBox="0 0 24 24" width="11.5" height="11.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+  folder: () =>
+    svgEl('svg', { viewBox: '0 0 24 24', width: 11.5, height: 11.5, fill: 'none', stroke: 'currentColor', 'stroke-width': 2.1, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      svgEl('path', { d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' })
+    ]),
+  chat: () =>
+    svgEl('svg', { viewBox: '0 0 24 24', width: 11.5, height: 11.5, fill: 'none', stroke: 'currentColor', 'stroke-width': 2.1, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      svgEl('path', { d: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z' })
+    ]),
+  lock: () =>
+    svgEl('svg', { viewBox: '0 0 24 24', width: 11.5, height: 11.5, fill: 'none', stroke: 'currentColor', 'stroke-width': 2.1, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+      svgEl('rect', { width: 18, height: 11, x: 3, y: 11, rx: 2, ry: 2 }),
+      svgEl('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+    ])
 };
 
-const domParser = new DOMParser();
-function makeStatPill(svgStr, count) {
+function makeStatPill(iconBuilder, count) {
   const wrap = document.createElement('span');
   wrap.className = 'cf-stat-item';
-  const doc = domParser.parseFromString(svgStr, 'image/svg+xml');
-  wrap.appendChild(document.importNode(doc.documentElement, true));
+  wrap.appendChild(iconBuilder());
   const num = document.createElement('span');
   num.textContent = String(count);
   wrap.appendChild(num);

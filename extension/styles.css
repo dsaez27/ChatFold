@@ -361,12 +361,42 @@
 }
 
 /* Iconos SVG vectoriales */
-.gcm-svg-icon,
+.gcm-svg-icon {
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  pointer-events: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  overflow: visible !important;
+}
+
 .gcm-svg-logo {
   flex-shrink: 0 !important;
   display: inline-block !important;
   vertical-align: middle !important;
   pointer-events: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+}
+
+.gcm-lock-icon .gcm-svg-icon,
+.gcm-folder-pill .gcm-svg-icon {
+  width: 11.5px !important;
+  height: 11.5px !important;
+  min-width: 11.5px !important;
+  min-height: 11.5px !important;
+}
+
+.gcm-search-clear .gcm-svg-icon {
+  width: 11px !important;
+  height: 11px !important;
+  min-width: 11px !important;
+  min-height: 11px !important;
 }
 
 .gcm-mini-icon-btn {

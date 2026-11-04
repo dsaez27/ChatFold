@@ -21,6 +21,9 @@ for (const platform of ['gemini', 'chatgpt', 'claude', 'deepseek', 'opencode']) 
     await sleep(1100);
     assert.ok($(w, '#gcm-folders-box'), 'panel de carpetas');
     assert.ok($(w, '#gcm-toolbar'), 'barra superior');
+    assert.ok($(w, '#gcm-folders-box svg.gcm-svg-logo'), 'logo SVG en el encabezado del panel');
+    assert.ok($$(w, '#gcm-toolbar svg.gcm-svg-icon').length >= 4, 'iconos SVG en la barra superior');
+    assert.ok($$(w, '#gcm-folders-box .gcm-panel-footer svg.gcm-svg-icon').length === 4, 'iconos SVG en los 4 botones del pie del panel');
     assert.equal($$(w, '.gcm-checkbox:not(#gcm-select-all)').length, platform === 'gemini' ? 4 : 3);
     w.close();
   });
