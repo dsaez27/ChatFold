@@ -212,6 +212,8 @@
       addPromptBtn: "➕ Guardar Prompt",
       insertPromptBtn: "Insertar",
       deletePromptTitle: "Eliminar prompt",
+      promptsEmpty: "Aún no tienes prompts guardados. Crea uno abajo para reutilizarlo en 1 clic.",
+      searchClearTitle: "Limpiar búsqueda",
       toastPromptInserted: "⚡ Prompt insertado en el chat.",
       toastPromptCopied: "📋 Prompt copiado al portapapeles.",
       defaultPrompts: [
@@ -317,6 +319,8 @@
       addPromptBtn: "➕ Save Prompt",
       insertPromptBtn: "Insert",
       deletePromptTitle: "Delete prompt",
+      promptsEmpty: "No saved prompts yet. Create one below to insert it with 1 click.",
+      searchClearTitle: "Clear search",
       toastPromptInserted: "⚡ Prompt inserted into chat.",
       toastPromptCopied: "📋 Prompt copied to clipboard.",
       defaultPrompts: [
@@ -674,8 +678,8 @@
           txt.textContent = folder.name;
           badge.appendChild(dot);
           badge.appendChild(txt);
-          badge.style.background = `linear-gradient(135deg, ${folder.color}55 0%, #12141a 88%), #12141a`;
-          badge.style.color = "#ffffff";
+          badge.style.background = `linear-gradient(135deg, ${folder.color}55 0%, var(--gcm-badge-bg) 88%), var(--gcm-badge-bg)`;
+          badge.style.color = "var(--gcm-text-primary)";
           badge.style.borderColor = folder.color;
         }
       } else if (badge) {
@@ -1160,6 +1164,13 @@ ${text}` : text;
     listContainer.className = "gcm-prompts-list";
     const renderPromptsList = () => {
       listContainer.textContent = "";
+      if (state.folderState.prompts.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "gcm-prompts-empty";
+        empty.textContent = t().promptsEmpty;
+        listContainer.appendChild(empty);
+        return;
+      }
       state.folderState.prompts.forEach((p) => {
         const item = document.createElement("div");
         item.className = "gcm-prompt-item";
@@ -1216,7 +1227,7 @@ ${text}` : text;
     inputBody.placeholder = t().promptBodyPlaceholder;
     inputBody.rows = 3;
     const addPromptBtn = document.createElement("button");
-    addPromptBtn.className = "gcm-btn gcm-btn-Folder gcm-add-prompt-submit";
+    addPromptBtn.className = "gcm-btn gcm-btn-folder gcm-add-prompt-submit";
     addPromptBtn.textContent = t().addPromptBtn;
     addPromptBtn.addEventListener("click", () => {
       const newTitle = inputTitle.value.trim();
@@ -1248,6 +1259,13 @@ ${text}` : text;
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.remove();
     });
+    const onEsc = (e) => {
+      if (e.key === "Escape") {
+        overlay.remove();
+        document.removeEventListener("keydown", onEsc);
+      }
+    };
+    document.addEventListener("keydown", onEsc);
     card.appendChild(title);
     card.appendChild(desc);
     card.appendChild(listContainer);
@@ -1585,19 +1603,37 @@ ${text}` : text;
     body.className = "gcm-folders-body";
     const searchRow = document.createElement("div");
     searchRow.className = "gcm-search-sort-row";
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "gcm-search-wrap";
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.className = "gcm-search-input";
     searchInput.placeholder = t().searchPlaceholder;
     searchInput.value = state.searchQuery;
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "gcm-search-clear";
+    clearBtn.textContent = "×";
+    clearBtn.title = t().searchClearTitle;
+    clearBtn.style.display = state.searchQuery ? "inline-flex" : "none";
     let searchDebounce = null;
     searchInput.addEventListener("input", (e) => {
       state.searchQuery = e.target.value;
+      clearBtn.style.display = state.searchQuery ? "inline-flex" : "none";
       clearTimeout(searchDebounce);
       searchDebounce = setTimeout(() => {
         applyFolderBadgesAndFilter(getConversationRows());
       }, 90);
     });
+    clearBtn.addEventListener("click", () => {
+      state.searchQuery = "";
+      searchInput.value = "";
+      clearBtn.style.display = "none";
+      applyFolderBadgesAndFilter(getConversationRows());
+      searchInput.focus();
+    });
+    searchWrap.appendChild(searchInput);
+    searchWrap.appendChild(clearBtn);
     const sortBtn = document.createElement("button");
     sortBtn.id = "gcm-sort-btn";
     sortBtn.className = "gcm-sort-btn";
@@ -1608,7 +1644,7 @@ ${text}` : text;
       saveView();
       refreshUI();
     });
-    searchRow.appendChild(searchInput);
+    searchRow.appendChild(searchWrap);
     searchRow.appendChild(sortBtn);
     const pillsContainer = document.createElement("div");
     pillsContainer.id = "gcm-pills-container";

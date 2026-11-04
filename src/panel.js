@@ -390,20 +390,42 @@ function buildFoldersPanelDOM(box) {
   const searchRow = document.createElement('div');
   searchRow.className = 'gcm-search-sort-row';
 
+  const searchWrap = document.createElement('div');
+  searchWrap.className = 'gcm-search-wrap';
+
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.className = 'gcm-search-input';
   searchInput.placeholder = t().searchPlaceholder;
   searchInput.value = state.searchQuery;
 
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'gcm-search-clear';
+  clearBtn.textContent = '×';
+  clearBtn.title = t().searchClearTitle;
+  clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
+
   let searchDebounce = null;
   searchInput.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
+    clearBtn.style.display = state.searchQuery ? 'inline-flex' : 'none';
     clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
       applyFolderBadgesAndFilter(getConversationRows());
     }, 90);
   });
+
+  clearBtn.addEventListener('click', () => {
+    state.searchQuery = '';
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    applyFolderBadgesAndFilter(getConversationRows());
+    searchInput.focus();
+  });
+
+  searchWrap.appendChild(searchInput);
+  searchWrap.appendChild(clearBtn);
 
   const sortBtn = document.createElement('button');
   sortBtn.id = 'gcm-sort-btn';
@@ -416,7 +438,7 @@ function buildFoldersPanelDOM(box) {
     refreshUI();
   });
 
-  searchRow.appendChild(searchInput);
+  searchRow.appendChild(searchWrap);
   searchRow.appendChild(sortBtn);
 
   const pillsContainer = document.createElement('div');

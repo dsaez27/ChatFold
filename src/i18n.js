@@ -83,6 +83,8 @@ export const I18N = {
     addPromptBtn: '➕ Guardar Prompt',
     insertPromptBtn: 'Insertar',
     deletePromptTitle: 'Eliminar prompt',
+    promptsEmpty: 'Aún no tienes prompts guardados. Crea uno abajo para reutilizarlo en 1 clic.',
+    searchClearTitle: 'Limpiar búsqueda',
     toastPromptInserted: '⚡ Prompt insertado en el chat.',
     toastPromptCopied: '📋 Prompt copiado al portapapeles.',
     defaultPrompts: [
@@ -189,6 +191,8 @@ export const I18N = {
     addPromptBtn: '➕ Save Prompt',
     insertPromptBtn: 'Insert',
     deletePromptTitle: 'Delete prompt',
+    promptsEmpty: 'No saved prompts yet. Create one below to insert it with 1 click.',
+    searchClearTitle: 'Clear search',
     toastPromptInserted: '⚡ Prompt inserted into chat.',
     toastPromptCopied: '📋 Prompt copied to clipboard.',
     defaultPrompts: [

@@ -85,8 +85,8 @@ export function applyFolderBadgesAndFilter(items) {
         badge.appendChild(dot);
         badge.appendChild(txt);
 
-        badge.style.background = `linear-gradient(135deg, ${folder.color}55 0%, #12141a 88%), #12141a`;
-        badge.style.color = '#ffffff';
+        badge.style.background = `linear-gradient(135deg, ${folder.color}55 0%, var(--gcm-badge-bg) 88%), var(--gcm-badge-bg)`;
+        badge.style.color = 'var(--gcm-text-primary)';
         badge.style.borderColor = folder.color;
       }
     } else if (badge) {

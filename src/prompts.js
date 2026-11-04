@@ -71,6 +71,13 @@ export function openPromptsModal() {
 
   const renderPromptsList = () => {
     listContainer.textContent = '';
+    if (state.folderState.prompts.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'gcm-prompts-empty';
+      empty.textContent = t().promptsEmpty;
+      listContainer.appendChild(empty);
+      return;
+    }
     state.folderState.prompts.forEach((p) => {
       const item = document.createElement('div');
       item.className = 'gcm-prompt-item';
@@ -142,7 +149,7 @@ export function openPromptsModal() {
   inputBody.rows = 3;
 
   const addPromptBtn = document.createElement('button');
-  addPromptBtn.className = 'gcm-btn gcm-btn-Folder gcm-add-prompt-submit';
+  addPromptBtn.className = 'gcm-btn gcm-btn-folder gcm-add-prompt-submit';
   addPromptBtn.textContent = t().addPromptBtn;
   addPromptBtn.addEventListener('click', () => {
     const newTitle = inputTitle.value.trim();
@@ -179,6 +186,14 @@ export function openPromptsModal() {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.remove();
   });
+
+  const onEsc = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', onEsc);
+    }
+  };
+  document.addEventListener('keydown', onEsc);
 
   card.appendChild(title);
   card.appendChild(desc);

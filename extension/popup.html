@@ -9,9 +9,9 @@
   <body>
     <header class="cf-header">
       <div class="cf-brand">
-        <img src="icons/icon48.png" alt="ChatFold" class="cf-logo" width="28" height="28" />
+        <img src="icons/icon48.png" alt="ChatFold" class="cf-logo" width="30" height="30" />
         <div>
-          <div class="cf-title">ChatFold <span id="cf-version" class="cf-version">v3.4.0</span></div>
+          <div class="cf-title">ChatFold <span id="cf-version" class="cf-version">v3.4.1</span></div>
           <div class="cf-subtitle" id="cf-sync-badge">☁️ Cloud Sync Activo</div>
         </div>
       </div>
@@ -25,9 +25,12 @@
     <section class="cf-section" id="cf-active-actions">
       <div class="cf-section-title">Acciones en Pestaña Activa</div>
       <div class="cf-actions-row">
-        <button id="cf-btn-toggle" class="cf-btn">🗔 Mostrar/Ocultar</button>
+        <button id="cf-btn-toggle" class="cf-btn">🗔 Panel</button>
         <button id="cf-btn-prompts" class="cf-btn cf-btn-primary">⚡ Prompts</button>
         <button id="cf-btn-backup" class="cf-btn">💾 Respaldo</button>
+      </div>
+      <div id="cf-inactive-hint" class="cf-inactive-hint" style="display: none;">
+        Abre una pestaña de Gemini, ChatGPT, Claude, DeepSeek u OpenCode para usar estas acciones.
       </div>
     </section>
 
