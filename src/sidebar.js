@@ -6,14 +6,75 @@ const rowIdCache = new WeakMap();
 
 const rowTitleCache = new WeakMap();
 
+const TASK_ID_RE = /\b(task_[0-9a-zA-Z_-]{5,})\b/;
+const UUID_RE = /\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i;
+
+const CHATGPT_STATIC_LABELS = new Set([
+  'chat nuevo',
+  'new chat',
+  'buscar chats',
+  'search chats',
+  'imágenes',
+  'imagenes',
+  'images',
+  'aplicaciones',
+  'apps',
+  'codex',
+  'gpt',
+  'gpts',
+  'explorar gpt',
+  'explore gpts',
+  'proyectos',
+  'projects',
+  'nuevo proyecto',
+  'new project',
+  'tus chats',
+  'your chats',
+  'biblioteca',
+  'library',
+  'sora',
+  'hoy',
+  'today',
+  'ayer',
+  'yesterday',
+  'últimos 7 días',
+  'previous 7 days',
+  'últimos 30 días',
+  'previous 30 days'
+]);
+
+function slugifyTitleForTaskId(title) {
+  const base = (title || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 36);
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
+  }
+  return `task_cloud_${base || 'item'}_${hash.toString(36)}`;
+}
+
 export function parseConvId(el) {
   if (!el) return null;
+
+  const bridgedId =
+    el.getAttribute?.('data-gcm-conv-id') ||
+    el.closest?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
+    el.querySelector?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
+    '';
+  if (bridgedId) return bridgedId;
+
   const href =
     el.getAttribute?.('href') ||
-    el.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute('href') ||
+    el.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute?.('href') ||
+    el.querySelector?.('a[href]')?.getAttribute?.('href') ||
     '';
   const cached = rowIdCache.get(el);
-  if (cached && cached.href === href) return cached.id;
+  if (cached && cached.href === href && href) return cached.id;
 
   if (href) {
     let pathPart = href;
@@ -27,6 +88,16 @@ export function parseConvId(el) {
       rowIdCache.set(el, { href, id: match[1] });
       return match[1];
     }
+    const taskMatch = TASK_ID_RE.exec(href);
+    if (taskMatch) {
+      rowIdCache.set(el, { href, id: taskMatch[1] });
+      return taskMatch[1];
+    }
+    const uuidMatch = UUID_RE.exec(href);
+    if (uuidMatch) {
+      rowIdCache.set(el, { href, id: uuidMatch[1] });
+      return uuidMatch[1];
+    }
   }
   const jslog = el.getAttribute?.('jslog') || '';
   if (jslog) {
@@ -36,15 +107,26 @@ export function parseConvId(el) {
       return id;
     } catch (_) {}
   }
-  const keyHolder = el.closest?.('[data-sidebar-chatgpt-conversation-key]');
+  const keyHolder =
+    (el.hasAttribute?.('data-sidebar-chatgpt-conversation-key') ? el : null) ||
+    el.closest?.('[data-sidebar-chatgpt-conversation-key]') ||
+    el.querySelector?.('[data-sidebar-chatgpt-conversation-key]');
   if (keyHolder) {
     const key = keyHolder.getAttribute('data-sidebar-chatgpt-conversation-key');
     if (key) return key;
   }
+  const testIdAttr =
+    el.getAttribute?.('data-testid') ||
+    el.closest?.('[data-testid]')?.getAttribute('data-testid') ||
+    '';
+  if (testIdAttr) {
+    const tm = TASK_ID_RE.exec(testIdAttr) || UUID_RE.exec(testIdAttr);
+    if (tm) return tm[1];
+  }
   return null;
 }
 
-function extractConvTitle(row, convId) {
+export function extractConvTitle(row, convId) {
   // La fila puede ser reutilizada por el framework para otra conversación: el caché se valida por id.
   const cached = rowTitleCache.get(row);
   if (cached && cached.id === convId) return cached.title;
@@ -65,7 +147,7 @@ function extractConvTitle(row, convId) {
   }
 
   const title = rawText.replace(/^🔒\s*/, '').trim();
-  if (title) rowTitleCache.set(row, { id: convId, title });
+  if (title && convId) rowTitleCache.set(row, { id: convId, title });
   return title;
 }
 
@@ -113,7 +195,62 @@ function findRowContainer(el) {
   return el;
 }
 
+function hasTrailingIconAfterText(el) {
+  const firstSvg = el.querySelector?.('svg');
+  if (!firstSvg) return false;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    if (node.nodeValue && node.nodeValue.trim().length >= 2) {
+      // 4 === Node.DOCUMENT_POSITION_FOLLOWING (el SVG aparece después del texto del título, como el ícono de nube ☁️)
+      return Boolean(node.compareDocumentPosition(firstSvg) & 4);
+    }
+    node = walker.nextNode();
+  }
+  return false;
+}
+
+function isLikelyChatGptCloudRow(el, historyContainers) {
+  if (!el || el.nodeType !== 1) return false;
+  if (el.closest('main') || el.closest('[id^="gcm-"]')) return false;
+  if (el.querySelector(CONV_LINK_SELECTOR)) return false;
+
+  const href = (el.getAttribute?.('href') || el.querySelector?.('a[href]')?.getAttribute?.('href') || '').trim();
+  if (
+    href === '/' ||
+    href === '/gpts' ||
+    href === '/images' ||
+    href === '/codex' ||
+    href === '/library' ||
+    href === '/projects'
+  ) {
+    return false;
+  }
+
+  const title = extractConvTitle(el, '');
+  if (!title || title.length < 2 || title.length > 220) return false;
+  if (CHATGPT_STATIC_LABELS.has(title.toLowerCase())) return false;
+
+  const inHistoryList = historyContainers.has(el.parentElement) || historyContainers.has(el.parentElement?.parentElement);
+  if (inHistoryList && hasTrailingIconAfterText(el)) return true;
+  if (
+    (el.classList?.contains('__menu-item') ||
+      el.getAttribute?.('data-sidebar-item') === 'true' ||
+      (el.getAttribute?.('data-testid') || '').startsWith('history-item')) &&
+    hasTrailingIconAfterText(el)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function getConversationRows() {
+  if (PLATFORM_KEY === 'chatgpt') {
+    try {
+      document.dispatchEvent(new CustomEvent('gcm:scan-sidebar'));
+    } catch (_) {}
+  }
+
   const sidebar = getSidebarElement();
   // En ChatGPT puede haber múltiples contenedores laterales (<nav>, <aside>, flyout de proyectos/tareas):
   // consultar en `document` (excluyendo <main> y nodos propios de ChatFold) garantiza detectar todos los chats.
@@ -124,6 +261,7 @@ export function getConversationRows() {
   const rows = [];
   const seenRows = new Set();
   const seenIds = new Set();
+  const historyContainers = new Set();
 
   for (let i = 0; i < candidates.length; i++) {
     const el = candidates[i];
@@ -139,6 +277,8 @@ export function getConversationRows() {
     if (!seenRows.has(row)) {
       seenRows.add(row);
       seenIds.add(id);
+      if (row.parentElement) historyContainers.add(row.parentElement);
+      if (row.parentElement?.parentElement) historyContainers.add(row.parentElement.parentElement);
       rows.push({
         id,
         row,
@@ -147,6 +287,48 @@ export function getConversationRows() {
       });
     }
   }
+
+  // En ChatGPT: detectar también las tareas en la nube de Codex (filas con ícono de nube ☁️ a la derecha
+  // que React renderiza sin atributo href estándar o antes de que el bridge extraiga su Fiber).
+  if (PLATFORM_KEY === 'chatgpt') {
+    const cloudSelector =
+      'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"], nav li, aside li';
+    const extraCandidates = Array.from(root.querySelectorAll(cloudSelector));
+    for (const container of historyContainers) {
+      if (container && container.children) {
+        for (const child of container.children) {
+          extraCandidates.push(child);
+        }
+      }
+    }
+
+    for (let i = 0; i < extraCandidates.length; i++) {
+      const el = extraCandidates[i];
+      const row = findRowContainer(el);
+      if (seenRows.has(row)) continue;
+      if (!isLikelyChatGptCloudRow(row, historyContainers)) continue;
+
+      const title = extractConvTitle(row, '');
+      let id = parseConvId(row) || slugifyTitleForTaskId(title);
+      if (seenIds.has(id)) {
+        let suffix = 2;
+        while (seenIds.has(`${id}_${suffix}`)) suffix++;
+        id = `${id}_${suffix}`;
+      }
+      row.setAttribute('data-gcm-conv-id', id);
+      row.setAttribute('data-gcm-task', '1');
+
+      seenRows.add(row);
+      seenIds.add(id);
+      rows.push({
+        id,
+        row,
+        link: row,
+        title
+      });
+    }
+  }
+
   return rows;
 }
 

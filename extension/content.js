@@ -209,7 +209,7 @@
     return null;
   }
   var PLATFORM_KEY = detectPlatform();
-  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"]';
+  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"], [data-gcm-conv-id]';
   var PLATFORMS = {
     gemini: {
       name: "Gemini",
@@ -234,19 +234,23 @@
       name: "ChatGPT",
       storageKey: "gcm_chatgpt_folders_data_v1",
       legacyStorageKey: null,
-      convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{4,})/,
+      convHrefRegex: /\/(?:c|codex\/tasks|codex\/cloud|codex|tasks|t|s)\/([0-9a-zA-Z_-]{4,})/,
       buildUrl: (id) => id.startsWith("task_") ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`,
       selectors: {
         sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
-        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"]',
+        conversationLinks: '[data-gcm-conv-id], [data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], [data-sidebar-chatgpt-conversation-key], [data-testid^="history-item"]',
         rowClosest: [
+          "[data-gcm-conv-id]",
           "[data-sidebar-chatgpt-conversation-key]",
           'li[data-testid^="history-item"]',
           'div[data-testid^="history-item"]',
           "li",
           "div.group",
           "a.__menu-item",
+          "div.__menu-item",
+          '[data-sidebar-item="true"]',
           'a[href*="/codex/tasks/"]',
+          'a[href*="/codex"]',
           'a[href*="/tasks/"]'
         ],
         optionsTrigger: 'button[data-testid^="history-item-"][data-testid$="-options"], button[data-testid*="options"], button[aria-haspopup="menu"], button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',
@@ -695,11 +699,56 @@
   // src/sidebar.js
   var rowIdCache = /* @__PURE__ */ new WeakMap();
   var rowTitleCache = /* @__PURE__ */ new WeakMap();
+  var TASK_ID_RE = /\b(task_[0-9a-zA-Z_-]{5,})\b/;
+  var UUID_RE = /\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i;
+  var CHATGPT_STATIC_LABELS = /* @__PURE__ */ new Set([
+    "chat nuevo",
+    "new chat",
+    "buscar chats",
+    "search chats",
+    "imágenes",
+    "imagenes",
+    "images",
+    "aplicaciones",
+    "apps",
+    "codex",
+    "gpt",
+    "gpts",
+    "explorar gpt",
+    "explore gpts",
+    "proyectos",
+    "projects",
+    "nuevo proyecto",
+    "new project",
+    "tus chats",
+    "your chats",
+    "biblioteca",
+    "library",
+    "sora",
+    "hoy",
+    "today",
+    "ayer",
+    "yesterday",
+    "últimos 7 días",
+    "previous 7 days",
+    "últimos 30 días",
+    "previous 30 days"
+  ]);
+  function slugifyTitleForTaskId(title) {
+    const base = (title || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 36);
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = hash * 31 + title.charCodeAt(i) >>> 0;
+    }
+    return `task_cloud_${base || "item"}_${hash.toString(36)}`;
+  }
   function parseConvId(el2) {
     if (!el2) return null;
-    const href = el2.getAttribute?.("href") || el2.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute("href") || "";
+    const bridgedId = el2.getAttribute?.("data-gcm-conv-id") || el2.closest?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || el2.querySelector?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || "";
+    if (bridgedId) return bridgedId;
+    const href = el2.getAttribute?.("href") || el2.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute?.("href") || el2.querySelector?.("a[href]")?.getAttribute?.("href") || "";
     const cached = rowIdCache.get(el2);
-    if (cached && cached.href === href) return cached.id;
+    if (cached && cached.href === href && href) return cached.id;
     if (href) {
       let pathPart = href;
       if (href.startsWith("http")) {
@@ -713,6 +762,16 @@
         rowIdCache.set(el2, { href, id: match[1] });
         return match[1];
       }
+      const taskMatch = TASK_ID_RE.exec(href);
+      if (taskMatch) {
+        rowIdCache.set(el2, { href, id: taskMatch[1] });
+        return taskMatch[1];
+      }
+      const uuidMatch = UUID_RE.exec(href);
+      if (uuidMatch) {
+        rowIdCache.set(el2, { href, id: uuidMatch[1] });
+        return uuidMatch[1];
+      }
     }
     const jslog = el2.getAttribute?.("jslog") || "";
     if (jslog) {
@@ -723,10 +782,15 @@
       } catch (_) {
       }
     }
-    const keyHolder = el2.closest?.("[data-sidebar-chatgpt-conversation-key]");
+    const keyHolder = (el2.hasAttribute?.("data-sidebar-chatgpt-conversation-key") ? el2 : null) || el2.closest?.("[data-sidebar-chatgpt-conversation-key]") || el2.querySelector?.("[data-sidebar-chatgpt-conversation-key]");
     if (keyHolder) {
       const key = keyHolder.getAttribute("data-sidebar-chatgpt-conversation-key");
       if (key) return key;
+    }
+    const testIdAttr = el2.getAttribute?.("data-testid") || el2.closest?.("[data-testid]")?.getAttribute("data-testid") || "";
+    if (testIdAttr) {
+      const tm = TASK_ID_RE.exec(testIdAttr) || UUID_RE.exec(testIdAttr);
+      if (tm) return tm[1];
     }
     return null;
   }
@@ -743,7 +807,7 @@
       rawText = linkEl.textContent || "";
     }
     const title = rawText.replace(/^🔒\s*/, "").trim();
-    if (title) rowTitleCache.set(row, { id: convId, title });
+    if (title && convId) rowTitleCache.set(row, { id: convId, title });
     return title;
   }
   function getSidebarElement() {
@@ -783,7 +847,44 @@
     }
     return el2;
   }
+  function hasTrailingIconAfterText(el2) {
+    const firstSvg = el2.querySelector?.("svg");
+    if (!firstSvg) return false;
+    const walker = document.createTreeWalker(el2, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      if (node.nodeValue && node.nodeValue.trim().length >= 2) {
+        return Boolean(node.compareDocumentPosition(firstSvg) & 4);
+      }
+      node = walker.nextNode();
+    }
+    return false;
+  }
+  function isLikelyChatGptCloudRow(el2, historyContainers) {
+    if (!el2 || el2.nodeType !== 1) return false;
+    if (el2.closest("main") || el2.closest('[id^="gcm-"]')) return false;
+    if (el2.querySelector(CONV_LINK_SELECTOR)) return false;
+    const href = (el2.getAttribute?.("href") || el2.querySelector?.("a[href]")?.getAttribute?.("href") || "").trim();
+    if (href === "/" || href === "/gpts" || href === "/images" || href === "/codex" || href === "/library" || href === "/projects") {
+      return false;
+    }
+    const title = extractConvTitle(el2, "");
+    if (!title || title.length < 2 || title.length > 220) return false;
+    if (CHATGPT_STATIC_LABELS.has(title.toLowerCase())) return false;
+    const inHistoryList = historyContainers.has(el2.parentElement) || historyContainers.has(el2.parentElement?.parentElement);
+    if (inHistoryList && hasTrailingIconAfterText(el2)) return true;
+    if ((el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true" || (el2.getAttribute?.("data-testid") || "").startsWith("history-item")) && hasTrailingIconAfterText(el2)) {
+      return true;
+    }
+    return false;
+  }
   function getConversationRows() {
+    if (PLATFORM_KEY === "chatgpt") {
+      try {
+        document.dispatchEvent(new CustomEvent("gcm:scan-sidebar"));
+      } catch (_) {
+      }
+    }
     const sidebar = getSidebarElement();
     const root = PLATFORM_KEY === "chatgpt" ? document : sidebar || (PLATFORM_KEY !== "gemini" ? document : null);
     if (!root) return [];
@@ -791,6 +892,7 @@
     const rows = [];
     const seenRows = /* @__PURE__ */ new Set();
     const seenIds = /* @__PURE__ */ new Set();
+    const historyContainers = /* @__PURE__ */ new Set();
     for (let i = 0; i < candidates.length; i++) {
       const el2 = candidates[i];
       if (PLATFORM_KEY !== "gemini" && el2.closest("main")) continue;
@@ -801,11 +903,47 @@
       if (!seenRows.has(row)) {
         seenRows.add(row);
         seenIds.add(id);
+        if (row.parentElement) historyContainers.add(row.parentElement);
+        if (row.parentElement?.parentElement) historyContainers.add(row.parentElement.parentElement);
         rows.push({
           id,
           row,
           link: el2,
           title: extractConvTitle(row, id)
+        });
+      }
+    }
+    if (PLATFORM_KEY === "chatgpt") {
+      const cloudSelector = 'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"], nav li, aside li';
+      const extraCandidates = Array.from(root.querySelectorAll(cloudSelector));
+      for (const container of historyContainers) {
+        if (container && container.children) {
+          for (const child of container.children) {
+            extraCandidates.push(child);
+          }
+        }
+      }
+      for (let i = 0; i < extraCandidates.length; i++) {
+        const el2 = extraCandidates[i];
+        const row = findRowContainer(el2);
+        if (seenRows.has(row)) continue;
+        if (!isLikelyChatGptCloudRow(row, historyContainers)) continue;
+        const title = extractConvTitle(row, "");
+        let id = parseConvId(row) || slugifyTitleForTaskId(title);
+        if (seenIds.has(id)) {
+          let suffix = 2;
+          while (seenIds.has(`${id}_${suffix}`)) suffix++;
+          id = `${id}_${suffix}`;
+        }
+        row.setAttribute("data-gcm-conv-id", id);
+        row.setAttribute("data-gcm-task", "1");
+        seenRows.add(row);
+        seenIds.add(id);
+        rows.push({
+          id,
+          row,
+          link: row,
+          title
         });
       }
     }
@@ -1498,14 +1636,19 @@ ${text}` : text;
     }
     return label.includes("fijar") || label.includes("desfijar") || label.includes("pin") || label.includes("unpin") || label.includes("archiv");
   }
-  function isRemoteTask(targetId, link) {
+  function isRemoteTask(targetId, link, row) {
     if (typeof targetId === "string" && targetId.startsWith("task_")) return true;
+    if (row?.getAttribute?.("data-gcm-task") === "1" || link?.getAttribute?.("data-gcm-task") === "1") return true;
     const href = link?.getAttribute?.("href") || "";
-    return href.includes("/codex/tasks/") || href.includes("/tasks/");
+    return href.includes("/codex/tasks/") || href.includes("/codex") || href.includes("/tasks/");
   }
   function findOptionsTrigger(row, link, isTask = false) {
     const targets = [row, link, row.parentElement].filter(Boolean);
     for (const tEl of targets) {
+      try {
+        tEl.dispatchEvent(new CustomEvent("gcm:react-hover", { bubbles: true }));
+      } catch (_) {
+      }
       tEl.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
       tEl.dispatchEvent(new PointerEvent("pointerenter", { bubbles: true }));
       tEl.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
@@ -1720,24 +1863,98 @@ ${text}` : text;
       headers
     });
   }
+  function getAlternateChatGptId(id) {
+    if (typeof id !== "string") return null;
+    const taskHex = /^task_e_([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{12})$/i.exec(id);
+    if (taskHex) {
+      return `${taskHex[1]}-${taskHex[2]}-${taskHex[3]}-${taskHex[4]}-${taskHex[5]}`.toLowerCase();
+    }
+    const uuidParts = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(id);
+    if (uuidParts) {
+      return `task_e_${uuidParts[1]}${uuidParts[2]}${uuidParts[3]}${uuidParts[4]}${uuidParts[5]}`.toLowerCase();
+    }
+    return null;
+  }
+  var cachedRemoteCatalog = { ts: 0, entries: [] };
+  async function resolveChatGptIdByTitle(row, targetId, token) {
+    if (!row) return null;
+    const rawTitle = extractConvTitle(row, targetId) || "";
+    const normTitle = rawTitle.replace(/\.\.\.$/, "").trim().toLowerCase();
+    if (!normTitle) return null;
+    const now = Date.now();
+    if (now - cachedRemoteCatalog.ts > 15e3 || cachedRemoteCatalog.entries.length === 0) {
+      const headers = buildChatGptHeaders(token, true);
+      const endpoints = [
+        { url: "/backend-api/wham/tasks", isTask: true },
+        { url: "/backend-api/tasks", isTask: true },
+        { url: "/backend-api/conversations?offset=0&limit=100&order=updated", isTask: false }
+      ];
+      const entries = [];
+      for (const ep of endpoints) {
+        try {
+          const r = await fetch(ep.url, { credentials: "include", headers });
+          if (r.ok) {
+            const data = await r.json();
+            const list = data?.items || data?.tasks || data?.data || data?.results || (Array.isArray(data) ? data : []);
+            if (Array.isArray(list)) {
+              for (const item of list) {
+                const id = item?.id || item?.task_id || item?.conversation_id;
+                const title = (item?.title || item?.name || item?.prompt || "").trim();
+                if (id && title) {
+                  entries.push({ id: String(id), title: title.toLowerCase(), isTask: ep.isTask || String(id).startsWith("task_") });
+                }
+              }
+            }
+          }
+        } catch (_) {
+        }
+      }
+      cachedRemoteCatalog = { ts: now, entries };
+    }
+    const match = cachedRemoteCatalog.entries.find((e) => e.title === normTitle) || cachedRemoteCatalog.entries.find((e) => e.title.startsWith(normTitle) || normTitle.startsWith(e.title));
+    if (match) {
+      cachedRemoteCatalog.entries = cachedRemoteCatalog.entries.filter((e) => e.id !== match.id);
+      return match;
+    }
+    return null;
+  }
   async function deleteChatGptViaApi(targetId, row, isTask = false) {
     if (PLATFORM_KEY !== "chatgpt" || typeof fetch !== "function") return false;
     try {
       let token = await getChatGptToken();
       if (!token) return false;
-      const runPrimary = (tk) => isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
-      const runSecondary = (tk) => isTask ? hideChatGptConversation(targetId, tk) : deleteOrArchiveRemoteTaskApi(targetId, tk);
-      let res = await runPrimary(token);
-      if (res.status === 401) {
+      let effectiveId = targetId;
+      let effectiveIsTask = isTask;
+      if (typeof effectiveId === "string" && effectiveId.startsWith("task_cloud_")) {
+        const resolved = await resolveChatGptIdByTitle(row, targetId, token);
+        if (!resolved?.id) return false;
+        effectiveId = resolved.id;
+        effectiveIsTask = resolved.isTask;
+      }
+      const tryWithId = async (idToTry, tk) => {
+        const runPrimary = () => effectiveIsTask ? deleteOrArchiveRemoteTaskApi(idToTry, tk) : hideChatGptConversation(idToTry, tk);
+        const runSecondary = () => effectiveIsTask ? hideChatGptConversation(idToTry, tk) : deleteOrArchiveRemoteTaskApi(idToTry, tk);
+        let r = await runPrimary();
+        if (!r?.ok && r?.status !== 401) {
+          const sec = await runSecondary();
+          if (sec?.ok) r = sec;
+        }
+        return r;
+      };
+      let res = await tryWithId(effectiveId, token);
+      if (res?.status === 401) {
         token = await getChatGptToken(true);
         if (!token) return false;
-        res = await runPrimary(token);
+        res = await tryWithId(effectiveId, token);
       }
-      if (!res.ok) {
-        const secRes = await runSecondary(token);
-        if (secRes?.ok) res = secRes;
+      if (!res?.ok) {
+        const altId = getAlternateChatGptId(effectiveId);
+        if (altId) {
+          const altRes = await tryWithId(altId, token);
+          if (altRes?.ok) res = altRes;
+        }
       }
-      if (res.ok) {
+      if (res?.ok) {
         removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
         await sleep(160);
@@ -1751,7 +1968,7 @@ ${text}` : text;
     const found = findRowById(targetId);
     const row = found?.row || null;
     const link = found?.link || null;
-    const isTask = isRemoteTask(targetId, link);
+    const isTask = isRemoteTask(targetId, link, row);
     if (PLATFORM_KEY === "chatgpt") {
       const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
       if (apiOk) return true;

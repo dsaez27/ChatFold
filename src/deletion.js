@@ -1,7 +1,7 @@
 import { showConfirmModal, updateStatusToast } from './dialogs.js';
 import { refreshUI } from './main.js';
 import { CONV_LINK_SELECTOR, PLATFORM_KEY, SELECTORS } from './platform.js';
-import { findRowById, getSidebarElement, isSingleRowContainer } from './sidebar.js';
+import { extractConvTitle, findRowById, getSidebarElement, isSingleRowContainer } from './sidebar.js';
 import { selectedMap, state, t } from './state.js';
 import { saveFolderData } from './storage.js';
 import { updateToolbarState } from './toolbar.js';
@@ -29,15 +29,19 @@ function isPinOrArchiveButton(btn, allowArchive = false) {
 }
 
 /** Determina si una fila/ID corresponde a una Tarea Remota de ChatGPT / Codex (`/codex/tasks/` o `task_...`). */
-function isRemoteTask(targetId, link) {
+function isRemoteTask(targetId, link, row) {
   if (typeof targetId === 'string' && targetId.startsWith('task_')) return true;
+  if (row?.getAttribute?.('data-gcm-task') === '1' || link?.getAttribute?.('data-gcm-task') === '1') return true;
   const href = link?.getAttribute?.('href') || '';
-  return href.includes('/codex/tasks/') || href.includes('/tasks/');
+  return href.includes('/codex/tasks/') || href.includes('/codex') || href.includes('/tasks/');
 }
 
 function findOptionsTrigger(row, link, isTask = false) {
   const targets = [row, link, row.parentElement].filter(Boolean);
   for (const tEl of targets) {
+    try {
+      tEl.dispatchEvent(new CustomEvent('gcm:react-hover', { bubbles: true }));
+    } catch (_) {}
     tEl.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
     tEl.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
     tEl.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
@@ -291,31 +295,116 @@ async function deleteOrArchiveRemoteTaskApi(targetId, token) {
   });
 }
 
+function getAlternateChatGptId(id) {
+  if (typeof id !== 'string') return null;
+  const taskHex = /^task_e_([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{4})([0-9a-f]{12})$/i.exec(id);
+  if (taskHex) {
+    return `${taskHex[1]}-${taskHex[2]}-${taskHex[3]}-${taskHex[4]}-${taskHex[5]}`.toLowerCase();
+  }
+  const uuidParts = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(id);
+  if (uuidParts) {
+    return `task_e_${uuidParts[1]}${uuidParts[2]}${uuidParts[3]}${uuidParts[4]}${uuidParts[5]}`.toLowerCase();
+  }
+  return null;
+}
+
+let cachedRemoteCatalog = { ts: 0, entries: [] };
+
+async function resolveChatGptIdByTitle(row, targetId, token) {
+  if (!row) return null;
+  const rawTitle = extractConvTitle(row, targetId) || '';
+  const normTitle = rawTitle.replace(/\.\.\.$/, '').trim().toLowerCase();
+  if (!normTitle) return null;
+
+  const now = Date.now();
+  if (now - cachedRemoteCatalog.ts > 15000 || cachedRemoteCatalog.entries.length === 0) {
+    const headers = buildChatGptHeaders(token, true);
+    const endpoints = [
+      { url: '/backend-api/wham/tasks', isTask: true },
+      { url: '/backend-api/tasks', isTask: true },
+      { url: '/backend-api/conversations?offset=0&limit=100&order=updated', isTask: false }
+    ];
+    const entries = [];
+    for (const ep of endpoints) {
+      try {
+        const r = await fetch(ep.url, { credentials: 'include', headers });
+        if (r.ok) {
+          const data = await r.json();
+          const list =
+            data?.items || data?.tasks || data?.data || data?.results || (Array.isArray(data) ? data : []);
+          if (Array.isArray(list)) {
+            for (const item of list) {
+              const id = item?.id || item?.task_id || item?.conversation_id;
+              const title = (item?.title || item?.name || item?.prompt || '').trim();
+              if (id && title) {
+                entries.push({ id: String(id), title: title.toLowerCase(), isTask: ep.isTask || String(id).startsWith('task_') });
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    cachedRemoteCatalog = { ts: now, entries };
+  }
+
+  const match =
+    cachedRemoteCatalog.entries.find((e) => e.title === normTitle) ||
+    cachedRemoteCatalog.entries.find((e) => e.title.startsWith(normTitle) || normTitle.startsWith(e.title));
+  if (match) {
+    // Eliminarlo del catálogo en caché por si hay otra tarea con título similar
+    cachedRemoteCatalog.entries = cachedRemoteCatalog.entries.filter((e) => e.id !== match.id);
+    return match;
+  }
+  return null;
+}
+
 async function deleteChatGptViaApi(targetId, row, isTask = false) {
   if (PLATFORM_KEY !== 'chatgpt' || typeof fetch !== 'function') return false;
   try {
     let token = await getChatGptToken();
     if (!token) return false;
 
-    const runPrimary = (tk) =>
-      isTask ? deleteOrArchiveRemoteTaskApi(targetId, tk) : hideChatGptConversation(targetId, tk);
-    const runSecondary = (tk) =>
-      isTask ? hideChatGptConversation(targetId, tk) : deleteOrArchiveRemoteTaskApi(targetId, tk);
+    let effectiveId = targetId;
+    let effectiveIsTask = isTask;
 
-    let res = await runPrimary(token);
+    if (typeof effectiveId === 'string' && effectiveId.startsWith('task_cloud_')) {
+      const resolved = await resolveChatGptIdByTitle(row, targetId, token);
+      if (!resolved?.id) return false;
+      effectiveId = resolved.id;
+      effectiveIsTask = resolved.isTask;
+    }
+
+    const tryWithId = async (idToTry, tk) => {
+      const runPrimary = () =>
+        effectiveIsTask ? deleteOrArchiveRemoteTaskApi(idToTry, tk) : hideChatGptConversation(idToTry, tk);
+      const runSecondary = () =>
+        effectiveIsTask ? hideChatGptConversation(idToTry, tk) : deleteOrArchiveRemoteTaskApi(idToTry, tk);
+
+      let r = await runPrimary();
+      if (!r?.ok && r?.status !== 401) {
+        const sec = await runSecondary();
+        if (sec?.ok) r = sec;
+      }
+      return r;
+    };
+
+    let res = await tryWithId(effectiveId, token);
     // Token vencido: pedir uno nuevo y reintentar una sola vez.
-    if (res.status === 401) {
+    if (res?.status === 401) {
       token = await getChatGptToken(true);
       if (!token) return false;
-      res = await runPrimary(token);
+      res = await tryWithId(effectiveId, token);
     }
 
-    if (!res.ok) {
-      const secRes = await runSecondary(token);
-      if (secRes?.ok) res = secRes;
+    if (!res?.ok) {
+      const altId = getAlternateChatGptId(effectiveId);
+      if (altId) {
+        const altRes = await tryWithId(altId, token);
+        if (altRes?.ok) res = altRes;
+      }
     }
 
-    if (res.ok) {
+    if (res?.ok) {
       removeDeletedRowFromDOM(row, targetId);
       cleanupEmptySidebarItems();
       await sleep(160);
@@ -329,7 +418,7 @@ async function deleteSingleConversation(targetId) {
   const found = findRowById(targetId);
   const row = found?.row || null;
   const link = found?.link || null;
-  const isTask = isRemoteTask(targetId, link);
+  const isTask = isRemoteTask(targetId, link, row);
 
   // En ChatGPT (tanto conversaciones normales como GPTs personalizados, proyectos y tareas remotas),
   // intentar primero el borrado directo vía API: es instantáneo, no falla con los últimos chats al fondo

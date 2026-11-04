@@ -773,6 +773,7 @@
 
 .gcm-chat-row a[href*="/c/"],
 .gcm-chat-row a[href*="/codex/tasks/"],
+.gcm-chat-row a[href*="/codex"],
 .gcm-chat-row a[href*="/tasks/"],
 .gcm-chat-row a[href*="/chat/"],
 .gcm-chat-row a[href*="/session/"] {
@@ -781,9 +782,13 @@
 
 a.gcm-chat-row[href*="/c/"],
 a.gcm-chat-row[href*="/codex/tasks/"],
+a.gcm-chat-row[href*="/codex"],
 a.gcm-chat-row[href*="/tasks/"],
 a.gcm-chat-row[href*="/chat/"],
-a.gcm-chat-row[href*="/session/"] {
+a.gcm-chat-row[href*="/session/"],
+.gcm-chat-row[data-gcm-conv-id],
+.__menu-item.gcm-chat-row,
+[data-sidebar-item="true"].gcm-chat-row {
   padding-left: 30px !important;
 }
 

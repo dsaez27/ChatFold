@@ -159,3 +159,54 @@ test('chatgpt: si DELETE de tarea remota devuelve 403, usa fallback POST /archiv
   assert.equal($(w, 'a[href*="/codex/tasks/task_e_ccccc33333"]'), null, 'fila eliminada del DOM');
   w.close();
 });
+
+test('chatgpt: detecta tareas en la nube con ícono SVG a la derecha sin href y las borra resolviendo ID por título', async () => {
+  const w = loadExtension(bundle, 'chatgpt');
+  const calledUrls = [];
+  w.fetch = async (url, init) => {
+    calledUrls.push(`${init?.method || 'GET'} ${url}`);
+    if (url === '/api/auth/session') {
+      return { ok: true, status: 200, json: async () => ({ accessToken: 'tok_test_123' }) };
+    }
+    if (url === '/backend-api/wham/tasks' && (!init?.method || init.method === 'GET')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [{ id: 'task_e_68731280c5748321949876161175f394', title: 'Crear nuevo tema con colores diferentes' }]
+        })
+      };
+    }
+    if (url === '/backend-api/wham/tasks/task_e_68731280c5748321949876161175f394' && init?.method === 'DELETE') {
+      return { ok: true, status: 200 };
+    }
+    return { ok: false, status: 404 };
+  };
+  await sleep(1100);
+
+  // Insertar una fila de tarea en la nube de Codex sin atributo href (solo texto + ícono de nube SVG a la derecha)
+  const nav = $(w, 'nav');
+  const cloudRow = w.document.createElement('div');
+  cloudRow.className = 'group __menu-item';
+  cloudRow.innerHTML =
+    '<div class="truncate"><span dir="auto">Crear nuevo tema con colores diferentes</span></div><svg viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>';
+  nav.appendChild(cloudRow);
+
+  await sleep(750);
+  const cloudCb = cloudRow.querySelector('.gcm-checkbox');
+  assert.ok(cloudCb, 'checkbox inyectado en fila de tarea en la nube sin href');
+
+  click(w, cloudCb);
+  await sleep(100);
+  click(w, $(w, '#gcm-delete-btn'));
+  await sleep(150);
+  click(w, $(w, '#gcm-modal-overlay .gcm-btn-danger'));
+  await sleep(650);
+
+  assert.ok(
+    calledUrls.includes('DELETE /backend-api/wham/tasks/task_e_68731280c5748321949876161175f394'),
+    'resolvió el ID real por título y llamó a DELETE /backend-api/wham/tasks/{id}'
+  );
+  assert.equal(cloudRow.isConnected, false, 'fila de nube eliminada del DOM');
+  w.close();
+});

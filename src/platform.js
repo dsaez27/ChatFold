@@ -26,7 +26,7 @@ export const PLATFORM_KEY = detectPlatform();
 
 /** Selector universal de enlaces a conversaciones y tareas remotas en todas las plataformas soportadas. */
 export const CONV_LINK_SELECTOR =
-  'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"]';
+  'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"], [data-gcm-conv-id]';
 
 // Configuración específica por plataforma (Gemini, ChatGPT, Claude, DeepSeek y OpenCode)
 export const PLATFORMS = {
@@ -53,20 +53,24 @@ export const PLATFORMS = {
     name: 'ChatGPT',
     storageKey: 'gcm_chatgpt_folders_data_v1',
     legacyStorageKey: null,
-    convHrefRegex: /\/(?:c|codex\/tasks|tasks)\/([0-9a-zA-Z_-]{4,})/,
+    convHrefRegex: /\/(?:c|codex\/tasks|codex\/cloud|codex|tasks|t|s)\/([0-9a-zA-Z_-]{4,})/,
     buildUrl: (id) => (id.startsWith('task_') ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`),
     selectors: {
       sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
       conversationLinks:
-        '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/tasks/"]',
+        '[data-gcm-conv-id], [data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], [data-sidebar-chatgpt-conversation-key], [data-testid^="history-item"]',
       rowClosest: [
+        '[data-gcm-conv-id]',
         '[data-sidebar-chatgpt-conversation-key]',
         'li[data-testid^="history-item"]',
         'div[data-testid^="history-item"]',
         'li',
         'div.group',
         'a.__menu-item',
+        'div.__menu-item',
+        '[data-sidebar-item="true"]',
         'a[href*="/codex/tasks/"]',
+        'a[href*="/codex"]',
         'a[href*="/tasks/"]'
       ],
       optionsTrigger:
