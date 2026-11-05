@@ -1,6 +1,6 @@
 {
   "name": "chatfold",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "private": true,
   "description": "ChatFold - Extensión de Chrome: carpetas inteligentes, bóveda de prompts, sincronización en la nube y borrado masivo para Gemini, ChatGPT, Claude, DeepSeek y OpenCode.",
   "type": "module",

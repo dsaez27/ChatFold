@@ -84,7 +84,7 @@ function findOptionsTrigger(row, link, isTask = false) {
   return null;
 }
 
-function removeDeletedRowFromDOM(row, targetId) {
+async function removeDeletedRowFromDOM(row, targetId) {
   if (!row && targetId) {
     const found = findRowById(targetId);
     row = found?.row;
@@ -108,6 +108,11 @@ function removeDeletedRowFromDOM(row, targetId) {
 
   // Solo eliminar la fila individual; jamás eliminar contenedores <ol>, <ul> ni wrappers .relative de React
   if (isSingleRowContainer(containerToRemove)) {
+    if (containerToRemove.isConnected) {
+      row.classList?.add('gcm-row-deleting');
+      containerToRemove.classList?.add('gcm-row-deleting');
+      await sleep(220);
+    }
     containerToRemove.remove();
   }
 }
@@ -388,9 +393,8 @@ async function deleteChatGptViaApi(targetId, row, isTask = false) {
     }
 
     if (res?.ok) {
-      removeDeletedRowFromDOM(row, targetId);
+      await removeDeletedRowFromDOM(row, targetId);
       cleanupEmptySidebarItems();
-      await sleep(160);
       return true;
     }
   } catch (_) {}
@@ -434,8 +438,8 @@ async function deleteSingleConversation(targetId) {
     realClick(trigger);
 
     if (isDirectArchiveBtn) {
-      await sleep(450);
-      removeDeletedRowFromDOM(row, targetId);
+      await sleep(300);
+      await removeDeletedRowFromDOM(row, targetId);
       cleanupEmptySidebarItems();
       return true;
     }
@@ -447,13 +451,13 @@ async function deleteSingleConversation(targetId) {
     if (!menu) {
       // Si el botón era un botón directo de Archivar (sin submenú) en una tarea remota:
       if (isTask || PLATFORM_KEY === 'chatgpt') {
-        await sleep(450);
+        await sleep(300);
         if (!row.isConnected) {
           cleanupEmptySidebarItems();
           return true;
         }
         if (isTask) {
-          removeDeletedRowFromDOM(row, targetId);
+          await removeDeletedRowFromDOM(row, targetId);
           cleanupEmptySidebarItems();
           return true;
         }
@@ -505,8 +509,8 @@ async function deleteSingleConversation(targetId) {
     if (!dialog) {
       // Archivar una tarea o conversación no suele pedir diálogo de confirmación
       if (isArchiveAction) {
-        await sleep(450);
-        removeDeletedRowFromDOM(row, targetId);
+        await sleep(300);
+        await removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
         return true;
       }
@@ -538,8 +542,8 @@ async function deleteSingleConversation(targetId) {
 
     realClick(confirmBtn);
     await pollUntil(() => !isActiveOverlay(dialog), 4000);
-    await sleep(PLATFORM_KEY === 'chatgpt' ? 650 : 550);
-    removeDeletedRowFromDOM(row, targetId);
+    await sleep(PLATFORM_KEY === 'chatgpt' ? 450 : 350);
+    await removeDeletedRowFromDOM(row, targetId);
     cleanupEmptySidebarItems();
     return true;
   } catch (domErr) {
@@ -547,7 +551,7 @@ async function deleteSingleConversation(targetId) {
       document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
       if (apiOk) {
-        removeDeletedRowFromDOM(row, targetId);
+        await removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
         return true;
       }

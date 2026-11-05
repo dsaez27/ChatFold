@@ -1680,7 +1680,7 @@ ${text}` : text;
     }
     return null;
   }
-  function removeDeletedRowFromDOM(row, targetId) {
+  async function removeDeletedRowFromDOM(row, targetId) {
     if (!row && targetId) {
       const found = findRowById(targetId);
       row = found?.row;
@@ -1694,6 +1694,11 @@ ${text}` : text;
       containerToRemove = row.parentElement;
     }
     if (isSingleRowContainer(containerToRemove)) {
+      if (containerToRemove.isConnected) {
+        row.classList?.add("gcm-row-deleting");
+        containerToRemove.classList?.add("gcm-row-deleting");
+        await sleep(220);
+      }
       containerToRemove.remove();
     }
   }
@@ -1937,9 +1942,8 @@ ${text}` : text;
         }
       }
       if (res?.ok) {
-        removeDeletedRowFromDOM(row, targetId);
+        await removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
-        await sleep(160);
         return true;
       }
     } catch (_) {
@@ -1967,8 +1971,8 @@ ${text}` : text;
       const isDirectArchiveBtn = triggerLabel.includes("archiv") && !trigger.getAttribute?.("aria-haspopup");
       realClick(trigger);
       if (isDirectArchiveBtn) {
-        await sleep(450);
-        removeDeletedRowFromDOM(row, targetId);
+        await sleep(300);
+        await removeDeletedRowFromDOM(row, targetId);
         cleanupEmptySidebarItems();
         return true;
       }
@@ -1978,13 +1982,13 @@ ${text}` : text;
       );
       if (!menu) {
         if (isTask || PLATFORM_KEY === "chatgpt") {
-          await sleep(450);
+          await sleep(300);
           if (!row.isConnected) {
             cleanupEmptySidebarItems();
             return true;
           }
           if (isTask) {
-            removeDeletedRowFromDOM(row, targetId);
+            await removeDeletedRowFromDOM(row, targetId);
             cleanupEmptySidebarItems();
             return true;
           }
@@ -2018,8 +2022,8 @@ ${text}` : text;
       );
       if (!dialog) {
         if (isArchiveAction) {
-          await sleep(450);
-          removeDeletedRowFromDOM(row, targetId);
+          await sleep(300);
+          await removeDeletedRowFromDOM(row, targetId);
           cleanupEmptySidebarItems();
           return true;
         }
@@ -2040,8 +2044,8 @@ ${text}` : text;
       }
       realClick(confirmBtn);
       await pollUntil(() => !isActiveOverlay(dialog), 4e3);
-      await sleep(PLATFORM_KEY === "chatgpt" ? 650 : 550);
-      removeDeletedRowFromDOM(row, targetId);
+      await sleep(PLATFORM_KEY === "chatgpt" ? 450 : 350);
+      await removeDeletedRowFromDOM(row, targetId);
       cleanupEmptySidebarItems();
       return true;
     } catch (domErr) {
@@ -2049,7 +2053,7 @@ ${text}` : text;
         document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
         const apiOk = await deleteChatGptViaApi(targetId, row, isTask);
         if (apiOk) {
-          removeDeletedRowFromDOM(row, targetId);
+          await removeDeletedRowFromDOM(row, targetId);
           cleanupEmptySidebarItems();
           return true;
         }
