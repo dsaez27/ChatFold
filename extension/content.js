@@ -670,6 +670,7 @@
     toolbarVertical: !!folderState.view.toolbarVertical,
     autoScrollActive: false,
     autoScrollRunId: 0,
+    autoSelectAllMode: false,
     deletionInProgress: false,
     deletionStopRequested: false,
     lastCheckedCheckbox: null,
@@ -1345,7 +1346,7 @@
             break;
           }
         }
-        targetRow.scrollIntoView({ behavior: "smooth", block: "end" });
+        targetRow.scrollIntoView?.({ behavior: "smooth", block: "end" });
         let scroller = targetRow.parentElement;
         while (scroller && scroller !== document.body) {
           if (scroller.scrollHeight > scroller.clientHeight + 10) {
@@ -1955,7 +1956,7 @@ ${text}` : text;
       if (apiOk) return true;
     }
     if (!found) return false;
-    row.scrollIntoView({ block: "center" });
+    row.scrollIntoView?.({ block: "center" });
     await sleep(180);
     try {
       const trigger = await pollUntil(() => findOptionsTrigger(row, link, isTask), 1200, 80);
@@ -2069,6 +2070,8 @@ ${text}` : text;
     if (!confirmed) return;
     state.deletionInProgress = true;
     state.deletionStopRequested = false;
+    state.autoSelectAllMode = false;
+    if (state.autoScrollActive) state.autoScrollActive = false;
     document.body.classList.add("gcm-stealth-delete");
     updateToolbarState();
     const total = queueIds.length;
@@ -2197,6 +2200,7 @@ ${text}
     );
   }
   function clearAllSelections() {
+    state.autoSelectAllMode = false;
     selectedMap.clear();
     const sidebar = getSidebarElement() || document;
     sidebar.querySelectorAll(".gcm-checkbox").forEach((cb) => {
@@ -2337,6 +2341,10 @@ ${text}
           const row = checkbox.closest(".gcm-chat-row") || checkbox.parentElement;
           if (!id || !row) return;
           const willBeChecked = !selectedMap.has(id);
+          if (!willBeChecked) {
+            state.autoSelectAllMode = false;
+            if (state.autoScrollActive) state.autoScrollActive = false;
+          }
           const applyCbState = (cb, r, cbId, state2) => {
             cb.checked = state2;
             cb.classList.toggle("gcm-checked", state2);
@@ -2399,6 +2407,9 @@ ${text}
       if (!row.classList.contains("gcm-chat-row")) {
         row.classList.add("gcm-chat-row");
       }
+      if (state.autoSelectAllMode && !row.classList.contains("gcm-hidden-by-filter") && !selectedMap.has(id)) {
+        selectedMap.set(id, { id });
+      }
       const isSelected = selectedMap.has(id);
       const existingCb = row.querySelector(".gcm-checkbox");
       if (existingCb) {
@@ -2419,6 +2430,7 @@ ${text}
     }
   }
   function toggleSelectAll(checked) {
+    state.autoSelectAllMode = !!checked;
     const selectAllCb = document.getElementById("gcm-select-all");
     if (selectAllCb) {
       selectAllCb.checked = checked;
@@ -2445,6 +2457,14 @@ ${text}
       }
     });
     updateToolbarState();
+    if (checked) {
+      if (!state.autoScrollActive) {
+        toggleAutoScrollHistory();
+      }
+    } else if (state.autoScrollActive) {
+      state.autoScrollActive = false;
+      refreshUI();
+    }
   }
 
   // src/toolbar.js
@@ -2956,6 +2976,9 @@ ${text}
           } else if (msg.action === "EXPORT_BACKUP") {
             exportBackupConfig();
             sendResponse?.({ ok: true });
+          } else if (msg.action === "IMPORT_BACKUP") {
+            importBackupConfig();
+            sendResponse?.({ ok: true });
           }
         });
       }
@@ -3080,16 +3103,6 @@ ${text}
     setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
     scrollBtn.title = t().loadAllTitle;
     scrollBtn.addEventListener("click", toggleAutoScrollHistory);
-    const backupBtn = document.createElement("button");
-    backupBtn.className = "gcm-footer-btn";
-    setButtonIconText(backupBtn, ICONS.download, t().backupBtn);
-    backupBtn.title = t().backupTitle;
-    backupBtn.addEventListener("click", exportBackupConfig);
-    const restoreBtn = document.createElement("button");
-    restoreBtn.className = "gcm-footer-btn";
-    setButtonIconText(restoreBtn, ICONS.upload, t().importBtn);
-    restoreBtn.title = t().importTitle;
-    restoreBtn.addEventListener("click", importBackupConfig);
     const promptsBtn = document.createElement("button");
     promptsBtn.id = "gcm-prompts-btn";
     promptsBtn.className = "gcm-footer-btn";
@@ -3098,8 +3111,6 @@ ${text}
     promptsBtn.addEventListener("click", openPromptsModal);
     footer.appendChild(scrollBtn);
     footer.appendChild(promptsBtn);
-    footer.appendChild(backupBtn);
-    footer.appendChild(restoreBtn);
     body.appendChild(searchRow);
     body.appendChild(pillsContainer);
     body.appendChild(footer);
@@ -3141,6 +3152,7 @@ ${text}
     }
     pill.addEventListener("click", () => {
       state.userClickedFilterInSession = id !== "ALL";
+      state.autoSelectAllMode = false;
       state.activeFolderFilter = id;
       saveView();
       refreshUI();
@@ -3165,8 +3177,8 @@ ${text}
       createToolbar();
       const items = getConversationRows();
       runAutoClassification(items);
-      injectCheckboxes(items);
       applyFolderBadgesAndFilter(items);
+      injectCheckboxes(items);
       injectSidebarFoldersPanel(items);
       updateToolbarState();
     } finally {

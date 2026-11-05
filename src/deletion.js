@@ -413,7 +413,7 @@ async function deleteSingleConversation(targetId) {
 
   if (!found) return false;
 
-  row.scrollIntoView({ block: 'center' });
+  row.scrollIntoView?.({ block: 'center' });
   await sleep(180);
 
   try {
@@ -573,6 +573,8 @@ export async function deleteSelectedChats() {
 
   state.deletionInProgress = true;
   state.deletionStopRequested = false;
+  state.autoSelectAllMode = false;
+  if (state.autoScrollActive) state.autoScrollActive = false;
   document.body.classList.add('gcm-stealth-delete');
   updateToolbarState();
 

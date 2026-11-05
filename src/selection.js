@@ -1,3 +1,4 @@
+import { toggleAutoScrollHistory } from './autoscroll.js';
 import { openCreateFolderModal, updateStatusToast } from './dialogs.js';
 import { ICONS, setButtonIconText } from './icons.js';
 import { refreshUI } from './main.js';
@@ -31,6 +32,7 @@ export function toggleProtectSelected() {
 }
 
 function clearAllSelections() {
+  state.autoSelectAllMode = false;
   selectedMap.clear();
   const sidebar = getSidebarElement() || document;
   sidebar.querySelectorAll('.gcm-checkbox').forEach((cb) => {
@@ -195,6 +197,10 @@ export function setupDelegatedSidebarListener() {
         if (!id || !row) return;
 
         const willBeChecked = !selectedMap.has(id);
+        if (!willBeChecked) {
+          state.autoSelectAllMode = false;
+          if (state.autoScrollActive) state.autoScrollActive = false;
+        }
         const applyCbState = (cb, r, cbId, state) => {
           cb.checked = state;
           cb.classList.toggle('gcm-checked', state);
@@ -263,6 +269,9 @@ export function injectCheckboxes(items) {
     if (!row.classList.contains('gcm-chat-row')) {
       row.classList.add('gcm-chat-row');
     }
+    if (state.autoSelectAllMode && !row.classList.contains('gcm-hidden-by-filter') && !selectedMap.has(id)) {
+      selectedMap.set(id, { id });
+    }
     const isSelected = selectedMap.has(id);
 
     const existingCb = row.querySelector('.gcm-checkbox');
@@ -289,6 +298,7 @@ export function injectCheckboxes(items) {
 }
 
 export function toggleSelectAll(checked) {
+  state.autoSelectAllMode = !!checked;
   const selectAllCb = document.getElementById('gcm-select-all');
   if (selectAllCb) {
     selectAllCb.checked = checked;
@@ -315,4 +325,12 @@ export function toggleSelectAll(checked) {
     }
   });
   updateToolbarState();
+  if (checked) {
+    if (!state.autoScrollActive) {
+      toggleAutoScrollHistory();
+    }
+  } else if (state.autoScrollActive) {
+    state.autoScrollActive = false;
+    refreshUI();
+  }
 }

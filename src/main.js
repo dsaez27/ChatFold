@@ -22,8 +22,8 @@ export function refreshUI() {
     createToolbar();
     const items = getConversationRows();
     runAutoClassification(items);
-    injectCheckboxes(items);
     applyFolderBadgesAndFilter(items);
+    injectCheckboxes(items);
     injectSidebarFoldersPanel(items);
     updateToolbarState();
   } finally {

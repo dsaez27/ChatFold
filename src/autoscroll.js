@@ -31,7 +31,7 @@ export async function toggleAutoScrollHistory() {
           break;
         }
       }
-      targetRow.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      targetRow.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
       let scroller = targetRow.parentElement;
       while (scroller && scroller !== document.body) {
         if (scroller.scrollHeight > scroller.clientHeight + 10) {

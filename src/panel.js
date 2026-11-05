@@ -311,6 +311,9 @@ export function registerGlobalListeners() {
         } else if (msg.action === 'EXPORT_BACKUP') {
           exportBackupConfig();
           sendResponse?.({ ok: true });
+        } else if (msg.action === 'IMPORT_BACKUP') {
+          importBackupConfig();
+          sendResponse?.({ ok: true });
         }
       });
     }
@@ -460,18 +463,6 @@ function buildFoldersPanelDOM(box) {
   scrollBtn.title = t().loadAllTitle;
   scrollBtn.addEventListener('click', toggleAutoScrollHistory);
 
-  const backupBtn = document.createElement('button');
-  backupBtn.className = 'gcm-footer-btn';
-  setButtonIconText(backupBtn, ICONS.download, t().backupBtn);
-  backupBtn.title = t().backupTitle;
-  backupBtn.addEventListener('click', exportBackupConfig);
-
-  const restoreBtn = document.createElement('button');
-  restoreBtn.className = 'gcm-footer-btn';
-  setButtonIconText(restoreBtn, ICONS.upload, t().importBtn);
-  restoreBtn.title = t().importTitle;
-  restoreBtn.addEventListener('click', importBackupConfig);
-
   const promptsBtn = document.createElement('button');
   promptsBtn.id = 'gcm-prompts-btn';
   promptsBtn.className = 'gcm-footer-btn';
@@ -481,8 +472,6 @@ function buildFoldersPanelDOM(box) {
 
   footer.appendChild(scrollBtn);
   footer.appendChild(promptsBtn);
-  footer.appendChild(backupBtn);
-  footer.appendChild(restoreBtn);
 
   body.appendChild(searchRow);
   body.appendChild(pillsContainer);
@@ -532,6 +521,7 @@ function createFolderPill({ id, name, color, count, deletable, keywords }) {
 
   pill.addEventListener('click', () => {
     state.userClickedFilterInSession = id !== 'ALL';
+    state.autoSelectAllMode = false;
     state.activeFolderFilter = id;
     saveView();
     refreshUI();

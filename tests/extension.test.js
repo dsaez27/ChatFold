@@ -23,7 +23,7 @@ for (const platform of ['gemini', 'chatgpt', 'claude', 'deepseek', 'opencode']) 
     assert.ok($(w, '#gcm-toolbar'), 'barra superior');
     assert.ok($(w, '#gcm-folders-box svg.gcm-svg-logo'), 'logo SVG en el encabezado del panel');
     assert.ok($$(w, '#gcm-toolbar svg.gcm-svg-icon').length >= 4, 'iconos SVG en la barra superior');
-    assert.ok($$(w, '#gcm-folders-box .gcm-panel-footer svg.gcm-svg-icon').length === 4, 'iconos SVG en los 4 botones del pie del panel');
+    assert.ok($$(w, '#gcm-folders-box .gcm-panel-footer svg.gcm-svg-icon').length === 2, 'iconos SVG en los 2 botones del pie del panel');
     assert.equal($$(w, '.gcm-checkbox:not(#gcm-select-all)').length, platform === 'gemini' ? 4 : 3);
     w.close();
   });
@@ -208,5 +208,40 @@ test('chatgpt: detecta tareas en la nube con ícono SVG a la derecha sin href y 
     'resolvió el ID real por título y llamó a DELETE /backend-api/wham/tasks/{id}'
   );
   assert.equal(cloudRow.isConnected, false, 'fila de nube eliminada del DOM');
+  w.close();
+});
+
+test('al marcar Todo (#gcm-select-all), carga automáticamente el historial hacia abajo y marca los chats nuevos que van apareciendo', async () => {
+  const w = loadExtension(bundle, 'chatgpt');
+  await sleep(1100);
+
+  const selectAll = $(w, '#gcm-select-all');
+  selectAll.checked = true;
+  selectAll.dispatchEvent(new w.Event('change', { bubbles: true }));
+  await sleep(150);
+
+  assert.equal($$(w, '.gcm-checkbox.gcm-checked:not(#gcm-select-all)').length, 3, 'marca los 3 chats iniciales');
+  assert.ok($(w, '#gcm-autoscroll-btn').classList.contains('active'), 'activa la carga automática del historial hacia abajo');
+
+  // Simular que al hacer scroll hacia abajo aparecen 2 conversaciones nuevas en la barra lateral
+  const nav = $(w, 'nav');
+  const newChat1 = w.document.createElement('a');
+  newChat1.href = '/c/ddddd44444';
+  newChat1.textContent = 'Chat antiguo cargado 1';
+  const newChat2 = w.document.createElement('a');
+  newChat2.href = '/c/eeeee55555';
+  newChat2.textContent = 'Chat antiguo cargado 2';
+  nav.appendChild(newChat1);
+  nav.appendChild(newChat2);
+
+  await sleep(1500);
+  assert.equal($$(w, '.gcm-checkbox.gcm-checked:not(#gcm-select-all)').length, 5, 'los chats nuevos se marcan automáticamente a medida que cargan');
+  assert.equal(selectAll.checked, true, 'el checkbox Todo permanece marcado');
+
+  // Al desmarcar Todo, detiene el auto-scroll y desmarca todos
+  selectAll.checked = false;
+  selectAll.dispatchEvent(new w.Event('change', { bubbles: true }));
+  await sleep(150);
+  assert.equal($$(w, '.gcm-checkbox.gcm-checked:not(#gcm-select-all)').length, 0);
   w.close();
 });

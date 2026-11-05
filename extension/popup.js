@@ -167,4 +167,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('cf-btn-toggle')?.addEventListener('click', () => sendToActiveTab('TOGGLE_PANEL'));
   document.getElementById('cf-btn-prompts')?.addEventListener('click', () => sendToActiveTab('OPEN_PROMPTS'));
   document.getElementById('cf-btn-backup')?.addEventListener('click', () => sendToActiveTab('EXPORT_BACKUP'));
+  document.getElementById('cf-btn-import')?.addEventListener('click', () => sendToActiveTab('IMPORT_BACKUP'));
 });

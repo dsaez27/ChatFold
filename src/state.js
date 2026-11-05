@@ -24,6 +24,7 @@ export const state = {
 
   autoScrollActive: false,
   autoScrollRunId: 0,
+  autoSelectAllMode: false,
 
   deletionInProgress: false,
   deletionStopRequested: false,
