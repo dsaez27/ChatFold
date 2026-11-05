@@ -2,7 +2,7 @@
   <img src="assets/chatfold-full.png" alt="ChatFold" width="380" />
 </p>
 
-# ChatFold v3.5.3: Gestor Universal de Carpetas para Gemini, ChatGPT, Claude, DeepSeek & OpenCode
+# ChatFold v3.5.4: Gestor Universal de Carpetas para Gemini, ChatGPT, Claude, DeepSeek & OpenCode
 
 **ChatFold** es una extensión de Chrome (Manifest V3) que transforma tu experiencia en **Google Gemini**, **OpenAI ChatGPT**, **Anthropic Claude**, **DeepSeek** y **OpenCode**: añade carpetas inteligentes con clasificación automática por palabras clave, sincronización en la nube (`chrome.storage.sync`), bóveda de Prompts rápidos, popup de control, atajos de teclado, barra superior contraíble, búsqueda instantánea, protección de chats con candado, selección múltiple, borrado masivo seguro, exportación a Markdown y respaldo/importación en JSON.
 
