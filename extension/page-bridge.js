@@ -87,19 +87,27 @@
     return null;
   }
 
+  function isSingleItemElement(el) {
+    if (!el || el.nodeType !== 1) return false;
+    const tag = el.tagName;
+    if (tag === 'NAV' || tag === 'ASIDE' || tag === 'OL' || tag === 'UL' || tag === 'SECTION' || tag === 'MAIN') {
+      return false;
+    }
+    const nestedItems = el.querySelectorAll('.__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"], a[href]');
+    return nestedItems.length <= 1;
+  }
+
   function extractIdFromElementFiber(el) {
     let fiber = getFiber(el);
     const visited = new WeakSet();
     let steps = 0;
-    while (fiber && steps < 9) {
-      // Si llegamos a un contenedor DOM que agrupa múltiples filas, nos detenemos
+    while (fiber && steps < 7) {
+      // Si llegamos a un contenedor DOM ancestro que agrupa múltiples filas, nos detenemos inmediatamente
       if (
         fiber.stateNode instanceof Element &&
         fiber.stateNode !== el &&
-        (fiber.stateNode.tagName === 'NAV' ||
-          fiber.stateNode.tagName === 'ASIDE' ||
-          fiber.stateNode.tagName === 'OL' ||
-          fiber.stateNode.tagName === 'UL')
+        fiber.stateNode.contains(el) &&
+        !isSingleItemElement(fiber.stateNode)
       ) {
         break;
       }
@@ -121,23 +129,35 @@
     const roots = document.querySelectorAll('nav, aside, [data-testid="stage-thread-flyout"]');
     for (let r = 0; r < roots.length; r++) {
       const root = roots[r];
+      // Limpiar cualquier atributo que haya quedado en un contenedor padre de múltiples filas
+      root.querySelectorAll('[data-gcm-conv-id]').forEach((node) => {
+        if (!isSingleItemElement(node)) {
+          node.removeAttribute('data-gcm-conv-id');
+          node.removeAttribute('data-gcm-task');
+          node.classList.remove('gcm-chat-row', 'gcm-hidden-by-filter', 'gcm-has-badge', 'gcm-has-lock');
+        }
+      });
+
       const candidates = root.querySelectorAll(
-        'a, li, .__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"], [role="button"], div.group'
+        'a.__menu-item, div.__menu-item, [data-sidebar-item="true"], li[data-testid^="history-item"], div[data-testid^="history-item"]'
       );
       for (let i = 0; i < candidates.length; i++) {
         const el = candidates[i];
         if (el.closest('main, [id^="gcm-"]')) continue;
+        if (!isSingleItemElement(el)) continue;
+
         const existingId = el.getAttribute('data-gcm-conv-id') || '';
         if (existingId && !existingId.startsWith('task_cloud_')) continue;
 
         let found = extractIdFromElementFiber(el);
         if (!found) {
-          const inner = el.querySelector('[dir="auto"], .truncate, svg');
+          const inner = el.querySelector('[dir="auto"], .truncate');
           if (inner) found = extractIdFromElementFiber(inner);
         }
         if (found && found.id) {
           const targetRow =
-            el.closest('a, [data-sidebar-item="true"], .__menu-item, li[data-testid^="history-item"]') || el;
+            el.closest('a.__menu-item, div.__menu-item, [data-sidebar-item="true"], li[data-testid^="history-item"]') || el;
+          if (!isSingleItemElement(targetRow)) continue;
           const targetExisting = targetRow.getAttribute('data-gcm-conv-id') || '';
           if (!targetExisting || targetExisting.startsWith('task_cloud_')) {
             targetRow.setAttribute('data-gcm-conv-id', found.id);

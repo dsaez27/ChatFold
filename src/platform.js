@@ -64,11 +64,10 @@ export const PLATFORMS = {
         '[data-sidebar-chatgpt-conversation-key]',
         'li[data-testid^="history-item"]',
         'div[data-testid^="history-item"]',
-        'li',
-        'div.group',
         'a.__menu-item',
         'div.__menu-item',
         '[data-sidebar-item="true"]',
+        'a[href*="/c/"]',
         'a[href*="/codex/tasks/"]',
         'a[href*="/codex"]',
         'a[href*="/tasks/"]'

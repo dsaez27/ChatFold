@@ -172,20 +172,38 @@ export function getSidebarElement() {
 
 export function isSingleRowContainer(container) {
   if (!container || container === document.body) return false;
+  const tag = container.tagName;
+  if (tag === 'NAV' || tag === 'ASIDE' || tag === 'MAIN' || tag === 'OL' || tag === 'UL' || tag === 'SECTION') {
+    return false;
+  }
+  if (container.id === 'history' || container.getAttribute?.('data-testid') === 'stage-thread-flyout') {
+    return false;
+  }
   const links = container.querySelectorAll(CONV_LINK_SELECTOR);
-  return links.length <= 1;
+  if (links.length > 1) return false;
+  if (PLATFORM_KEY === 'chatgpt') {
+    const items = container.querySelectorAll(
+      'a[href], .__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"]'
+    );
+    if (items.length > 1) return false;
+  }
+  return true;
 }
 
 function findRowContainer(el) {
   if (PLATFORM_KEY === 'chatgpt') {
-    if (el.classList?.contains('__menu-item') || el.getAttribute?.('data-sidebar-item') === 'true') {
-      return el;
-    }
-    if (el.parentElement && isSingleRowContainer(el.parentElement)) {
-      const pTag = el.parentElement.tagName;
-      if (el.parentElement.classList?.contains('group') || pTag === 'LI' || pTag === 'DIV') {
-        return el.parentElement;
+    if (
+      el.tagName === 'A' ||
+      el.classList?.contains('__menu-item') ||
+      el.getAttribute?.('data-sidebar-item') === 'true'
+    ) {
+      const explicitItemWrapper = el.closest(
+        'li[data-testid^="history-item"], div[data-testid^="history-item"], [data-sidebar-chatgpt-conversation-key]'
+      );
+      if (explicitItemWrapper && isSingleRowContainer(explicitItemWrapper)) {
+        return explicitItemWrapper;
       }
+      return el;
     }
   }
   for (let i = 0; i < SELECTORS.rowClosest.length; i++) {
@@ -213,7 +231,11 @@ function hasTrailingIconAfterText(el) {
 function isLikelyChatGptCloudRow(el, historyContainers) {
   if (!el || el.nodeType !== 1) return false;
   if (el.closest('main') || el.closest('[id^="gcm-"]')) return false;
+  if (!isSingleRowContainer(el)) return false;
   if (el.querySelector(CONV_LINK_SELECTOR)) return false;
+  if (el.querySelector('.__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"], ol, ul, nav, aside')) {
+    return false;
+  }
 
   const href = (el.getAttribute?.('href') || el.querySelector?.('a[href]')?.getAttribute?.('href') || '').trim();
   if (
@@ -228,17 +250,16 @@ function isLikelyChatGptCloudRow(el, historyContainers) {
   }
 
   const title = extractConvTitle(el, '');
-  if (!title || title.length < 2 || title.length > 220) return false;
+  if (!title || title.length < 2 || title.length > 160 || title.includes('\n')) return false;
   if (CHATGPT_STATIC_LABELS.has(title.toLowerCase())) return false;
 
-  const inHistoryList = historyContainers.has(el.parentElement) || historyContainers.has(el.parentElement?.parentElement);
-  if (inHistoryList && hasTrailingIconAfterText(el)) return true;
-  if (
-    (el.classList?.contains('__menu-item') ||
-      el.getAttribute?.('data-sidebar-item') === 'true' ||
-      (el.getAttribute?.('data-testid') || '').startsWith('history-item')) &&
-    hasTrailingIconAfterText(el)
-  ) {
+  const isMenuItem =
+    el.classList?.contains('__menu-item') ||
+    el.getAttribute?.('data-sidebar-item') === 'true' ||
+    (el.getAttribute?.('data-testid') || '').startsWith('history-item');
+  const inHistoryList = historyContainers.has(el.parentElement);
+
+  if ((isMenuItem || inHistoryList) && hasTrailingIconAfterText(el)) {
     return true;
   }
   return false;
@@ -273,12 +294,15 @@ export function getConversationRows() {
     if (!id || seenIds.has(id)) continue;
 
     const row = findRowContainer(el);
+    if (!isSingleRowContainer(row)) {
+      el.removeAttribute?.('data-gcm-conv-id');
+      continue;
+    }
 
     if (!seenRows.has(row)) {
       seenRows.add(row);
       seenIds.add(id);
       if (row.parentElement) historyContainers.add(row.parentElement);
-      if (row.parentElement?.parentElement) historyContainers.add(row.parentElement.parentElement);
       rows.push({
         id,
         row,

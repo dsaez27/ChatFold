@@ -244,11 +244,10 @@
           "[data-sidebar-chatgpt-conversation-key]",
           'li[data-testid^="history-item"]',
           'div[data-testid^="history-item"]',
-          "li",
-          "div.group",
           "a.__menu-item",
           "div.__menu-item",
           '[data-sidebar-item="true"]',
+          'a[href*="/c/"]',
           'a[href*="/codex/tasks/"]',
           'a[href*="/codex"]',
           'a[href*="/tasks/"]'
@@ -826,19 +825,33 @@
   }
   function isSingleRowContainer(container) {
     if (!container || container === document.body) return false;
+    const tag = container.tagName;
+    if (tag === "NAV" || tag === "ASIDE" || tag === "MAIN" || tag === "OL" || tag === "UL" || tag === "SECTION") {
+      return false;
+    }
+    if (container.id === "history" || container.getAttribute?.("data-testid") === "stage-thread-flyout") {
+      return false;
+    }
     const links = container.querySelectorAll(CONV_LINK_SELECTOR);
-    return links.length <= 1;
+    if (links.length > 1) return false;
+    if (PLATFORM_KEY === "chatgpt") {
+      const items = container.querySelectorAll(
+        'a[href], .__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"]'
+      );
+      if (items.length > 1) return false;
+    }
+    return true;
   }
   function findRowContainer(el2) {
     if (PLATFORM_KEY === "chatgpt") {
-      if (el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true") {
-        return el2;
-      }
-      if (el2.parentElement && isSingleRowContainer(el2.parentElement)) {
-        const pTag = el2.parentElement.tagName;
-        if (el2.parentElement.classList?.contains("group") || pTag === "LI" || pTag === "DIV") {
-          return el2.parentElement;
+      if (el2.tagName === "A" || el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true") {
+        const explicitItemWrapper = el2.closest(
+          'li[data-testid^="history-item"], div[data-testid^="history-item"], [data-sidebar-chatgpt-conversation-key]'
+        );
+        if (explicitItemWrapper && isSingleRowContainer(explicitItemWrapper)) {
+          return explicitItemWrapper;
         }
+        return el2;
       }
     }
     for (let i = 0; i < SELECTORS.rowClosest.length; i++) {
@@ -863,17 +876,21 @@
   function isLikelyChatGptCloudRow(el2, historyContainers) {
     if (!el2 || el2.nodeType !== 1) return false;
     if (el2.closest("main") || el2.closest('[id^="gcm-"]')) return false;
+    if (!isSingleRowContainer(el2)) return false;
     if (el2.querySelector(CONV_LINK_SELECTOR)) return false;
+    if (el2.querySelector('.__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"], ol, ul, nav, aside')) {
+      return false;
+    }
     const href = (el2.getAttribute?.("href") || el2.querySelector?.("a[href]")?.getAttribute?.("href") || "").trim();
     if (href === "/" || href === "/gpts" || href === "/images" || href === "/codex" || href === "/library" || href === "/projects") {
       return false;
     }
     const title = extractConvTitle(el2, "");
-    if (!title || title.length < 2 || title.length > 220) return false;
+    if (!title || title.length < 2 || title.length > 160 || title.includes("\n")) return false;
     if (CHATGPT_STATIC_LABELS.has(title.toLowerCase())) return false;
-    const inHistoryList = historyContainers.has(el2.parentElement) || historyContainers.has(el2.parentElement?.parentElement);
-    if (inHistoryList && hasTrailingIconAfterText(el2)) return true;
-    if ((el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true" || (el2.getAttribute?.("data-testid") || "").startsWith("history-item")) && hasTrailingIconAfterText(el2)) {
+    const isMenuItem = el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true" || (el2.getAttribute?.("data-testid") || "").startsWith("history-item");
+    const inHistoryList = historyContainers.has(el2.parentElement);
+    if ((isMenuItem || inHistoryList) && hasTrailingIconAfterText(el2)) {
       return true;
     }
     return false;
@@ -900,11 +917,14 @@
       const id = parseConvId(el2);
       if (!id || seenIds.has(id)) continue;
       const row = findRowContainer(el2);
+      if (!isSingleRowContainer(row)) {
+        el2.removeAttribute?.("data-gcm-conv-id");
+        continue;
+      }
       if (!seenRows.has(row)) {
         seenRows.add(row);
         seenIds.add(id);
         if (row.parentElement) historyContainers.add(row.parentElement);
-        if (row.parentElement?.parentElement) historyContainers.add(row.parentElement.parentElement);
         rows.push({
           id,
           row,
@@ -984,6 +1004,24 @@
   function applyFolderBadgesAndFilter(items) {
     const folderLookup = new Map(state.folderState.folders.map((f) => [f.id, f]));
     const cleanQuery = state.searchQuery.trim().toLowerCase();
+    document.querySelectorAll(".gcm-hidden-by-filter").forEach((el2) => {
+      if (!isSingleRowContainer(el2)) {
+        el2.classList.remove("gcm-hidden-by-filter");
+      }
+    });
+    if (state.activeFolderFilter !== "ALL" && !state.userClickedFilterInSession && items.length > 0) {
+      const anyMatch = items.some(({ id }) => {
+        const fId = state.folderState.assignments[id];
+        const f = fId ? folderLookup.get(fId) : null;
+        if (state.activeFolderFilter === "UNASSIGNED") return !f;
+        if (state.activeFolderFilter === "PROTECTED") return !!state.folderState.protectedIds[id];
+        return f && f.id === state.activeFolderFilter;
+      });
+      if (!anyMatch) {
+        state.activeFolderFilter = "ALL";
+        saveView();
+      }
+    }
     for (let i = 0; i < items.length; i++) {
       const { id, row, title } = items[i];
       const assignedFolderId = state.folderState.assignments[id];
@@ -1692,18 +1730,11 @@ ${text}` : text;
     const parentLi = row.closest("li");
     if (parentLi && isSingleRowContainer(parentLi)) {
       containerToRemove = parentLi;
-    } else if (row.parentElement && row.parentElement !== document.body && row.parentElement.tagName === "DIV" && isSingleRowContainer(row.parentElement) && (row.parentElement.classList.contains("group") || row.parentElement.hasAttribute("data-sidebar-chatgpt-conversation-key") || (row.parentElement.getAttribute("data-testid") || "").startsWith("history-item"))) {
+    } else if (row.parentElement && row.parentElement !== document.body && row.parentElement.tagName === "DIV" && isSingleRowContainer(row.parentElement) && (row.parentElement.hasAttribute("data-sidebar-chatgpt-conversation-key") || (row.parentElement.getAttribute("data-testid") || "").startsWith("history-item"))) {
       containerToRemove = row.parentElement;
     }
-    const parentList = containerToRemove.parentElement;
-    containerToRemove.remove();
-    if (parentList && (parentList.tagName === "OL" || parentList.tagName === "UL")) {
-      if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-          sectionWrapper.remove();
-        }
-      }
+    if (isSingleRowContainer(containerToRemove)) {
+      containerToRemove.remove();
     }
   }
   function cleanupEmptySidebarItems() {
@@ -1712,15 +1743,6 @@ ${text}` : text;
     lis.forEach((li) => {
       if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
         li.remove();
-      }
-    });
-    const lists = sidebar.querySelectorAll("ol, ul");
-    lists.forEach((list) => {
-      if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
-        if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-          sectionWrapper.remove();
-        }
       }
     });
   }
@@ -3159,6 +3181,7 @@ ${text}
       pill.appendChild(del);
     }
     pill.addEventListener("click", () => {
+      state.userClickedFilterInSession = id !== "ALL";
       state.activeFolderFilter = id;
       saveView();
       refreshUI();

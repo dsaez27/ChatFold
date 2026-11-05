@@ -100,23 +100,15 @@ function removeDeletedRowFromDOM(row, targetId) {
     row.parentElement !== document.body &&
     row.parentElement.tagName === 'DIV' &&
     isSingleRowContainer(row.parentElement) &&
-    (row.parentElement.classList.contains('group') ||
-      row.parentElement.hasAttribute('data-sidebar-chatgpt-conversation-key') ||
+    (row.parentElement.hasAttribute('data-sidebar-chatgpt-conversation-key') ||
       (row.parentElement.getAttribute('data-testid') || '').startsWith('history-item'))
   ) {
     containerToRemove = row.parentElement;
   }
 
-  const parentList = containerToRemove.parentElement;
-  containerToRemove.remove();
-
-  if (parentList && (parentList.tagName === 'OL' || parentList.tagName === 'UL')) {
-    if (parentList.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-      const sectionWrapper = parentList.closest('.relative, div[class*="mt-"]');
-      if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        sectionWrapper.remove();
-      }
-    }
+  // Solo eliminar la fila individual; jamás eliminar contenedores <ol>, <ul> ni wrappers .relative de React
+  if (isSingleRowContainer(containerToRemove)) {
+    containerToRemove.remove();
   }
 }
 
@@ -126,15 +118,6 @@ function cleanupEmptySidebarItems() {
   lis.forEach((li) => {
     if (!li.querySelector(CONV_LINK_SELECTOR) && !li.textContent?.trim()) {
       li.remove();
-    }
-  });
-  const lists = sidebar.querySelectorAll('ol, ul');
-  lists.forEach((list) => {
-    if (list.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-      const sectionWrapper = list.closest('.relative, div[class*="mt-"]');
-      if (sectionWrapper && sectionWrapper.querySelectorAll(CONV_LINK_SELECTOR).length === 0) {
-        sectionWrapper.remove();
-      }
     }
   });
 }

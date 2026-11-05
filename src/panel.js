@@ -531,6 +531,7 @@ function createFolderPill({ id, name, color, count, deletable, keywords }) {
   }
 
   pill.addEventListener('click', () => {
+    state.userClickedFilterInSession = id !== 'ALL';
     state.activeFolderFilter = id;
     saveView();
     refreshUI();
