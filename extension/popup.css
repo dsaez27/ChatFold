@@ -45,17 +45,18 @@ body {
 .cf-title-fold {
   font-weight: 300;
   color: #8ab4f8;
-  margin-right: 5px;
 }
 
 .cf-version {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
+  letter-spacing: 0.3px;
   color: #8ab4f8;
-  background: rgba(138, 180, 248, 0.14);
-  border: 1px solid rgba(138, 180, 248, 0.25);
-  padding: 1px 6px;
-  border-radius: 99px;
+  background: rgba(138, 180, 248, 0.1);
+  border: 1px solid rgba(138, 180, 248, 0.28);
+  padding: 3px 7px;
+  border-radius: 6px;
+  align-self: flex-start;
 }
 
 .cf-subtitle {

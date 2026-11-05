@@ -4,7 +4,7 @@ import { openCreateFolderModal } from './dialogs.js';
 import { applyFolderBadgesAndFilter, deleteFolderById } from './folders.js';
 import { ICONS, createIconElement, setButtonIconText } from './icons.js';
 import { refreshUI } from './main.js';
-import { APP_VERSION, P } from './platform.js';
+import { P } from './platform.js';
 import { openPromptsModal } from './prompts.js';
 import { getConversationRows } from './sidebar.js';
 import { BUILTIN_FILTERS, autoClassifiedVisited, saveView, state, t } from './state.js';
@@ -336,7 +336,7 @@ function buildFoldersPanelDOM(box) {
   title.appendChild(createIconElement(ICONS.chatfoldLogo));
 
   const titleText = document.createElement('span');
-  titleText.textContent = `${t().panelTitle} v${APP_VERSION}`;
+  titleText.textContent = t().panelTitle;
   title.appendChild(titleText);
   title.title = t().toggleMinTitle;
   title.addEventListener('click', () => {

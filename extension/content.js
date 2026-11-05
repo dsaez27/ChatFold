@@ -2995,7 +2995,7 @@ ${text}
     title.style.gap = "7px";
     title.appendChild(createIconElement(ICONS.chatfoldLogo));
     const titleText = document.createElement("span");
-    titleText.textContent = `${t().panelTitle} v${APP_VERSION}`;
+    titleText.textContent = t().panelTitle;
     title.appendChild(titleText);
     title.title = t().toggleMinTitle;
     title.addEventListener("click", () => {
