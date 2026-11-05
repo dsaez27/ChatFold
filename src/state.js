@@ -14,13 +14,11 @@ const folderState = loadFolderData();
 export const state = {
   /** Datos persistidos (idioma, carpetas, asignaciones, protegidos, posición, vista). */
   folderState,
-  // Retomar la última vista (filtro y orden) donde se dejó; si la carpeta ya no existe, volver a "Todas".
-  activeFolderFilter:
-    BUILTIN_FILTERS.includes(folderState.view.filter) || folderState.folders.some((f) => f.id === folderState.view.filter)
-      ? folderState.view.filter
-      : 'ALL',
+  // Al abrir o recargar la página, mostrar siempre "Todas" ('ALL') y orden original ('DEFAULT')
+  // para que ningún filtro u orden previo oculte o altere la lista de conversaciones al iniciar.
+  activeFolderFilter: 'ALL',
   searchQuery: '',
-  sortMode: folderState.view.sort,
+  sortMode: 'DEFAULT',
   toolbarCollapsed: folderState.view.toolbarCollapsed,
   toolbarVertical: !!folderState.view.toolbarVertical,
 

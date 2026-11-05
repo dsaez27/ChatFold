@@ -209,7 +209,7 @@
     return null;
   }
   var PLATFORM_KEY = detectPlatform();
-  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"], [data-gcm-conv-id]';
+  var CONV_LINK_SELECTOR = 'a[href*="/app/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex/"], a[href*="/tasks/"], a[href*="/chat/"], a[href*="/session/"], [data-gcm-task="1"]';
   var PLATFORMS = {
     gemini: {
       name: "Gemini",
@@ -234,22 +234,20 @@
       name: "ChatGPT",
       storageKey: "gcm_chatgpt_folders_data_v1",
       legacyStorageKey: null,
-      convHrefRegex: /\/(?:c|codex\/tasks|codex\/cloud|codex|tasks|t|s)\/([0-9a-zA-Z_-]{4,})/,
+      convHrefRegex: /\/(?:c|codex\/tasks|codex\/cloud|codex|tasks)\/([0-9a-zA-Z_-]{5,})/,
       buildUrl: (id) => id.startsWith("task_") ? `https://chatgpt.com/codex/tasks/${id}` : `https://chatgpt.com/c/${id}`,
       selectors: {
         sidebar: '[data-testid="stage-thread-flyout"], nav[aria-label], nav, aside, .bg-token-sidebar-surface-primary',
-        conversationLinks: '[data-gcm-conv-id], [data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex"], a[href*="/tasks/"], [data-sidebar-chatgpt-conversation-key], [data-testid^="history-item"]',
+        conversationLinks: '[data-sidebar-chatgpt-conversation-key] a[href*="/c/"], [data-testid^="history-item"] a[href*="/c/"], nav a[href*="/c/"], aside a[href*="/c/"], a[href*="/c/"], a[href*="/codex/tasks/"], a[href*="/codex/"], a[href*="/tasks/"], [data-gcm-task="1"]',
         rowClosest: [
-          "[data-gcm-conv-id]",
           "[data-sidebar-chatgpt-conversation-key]",
           'li[data-testid^="history-item"]',
           'div[data-testid^="history-item"]',
+          "li",
+          "div.group",
           "a.__menu-item",
-          "div.__menu-item",
-          '[data-sidebar-item="true"]',
-          'a[href*="/c/"]',
           'a[href*="/codex/tasks/"]',
-          'a[href*="/codex"]',
+          'a[href*="/codex/"]',
           'a[href*="/tasks/"]'
         ],
         optionsTrigger: 'button[data-testid^="history-item-"][data-testid$="-options"], button[data-testid*="options"], button[aria-haspopup="menu"], button[aria-label*="Options"], button[aria-label*="Opciones"], button[aria-label*="More"], button[aria-label*="Más"]',
@@ -663,10 +661,11 @@
   var state = {
     /** Datos persistidos (idioma, carpetas, asignaciones, protegidos, posición, vista). */
     folderState,
-    // Retomar la última vista (filtro y orden) donde se dejó; si la carpeta ya no existe, volver a "Todas".
-    activeFolderFilter: BUILTIN_FILTERS.includes(folderState.view.filter) || folderState.folders.some((f) => f.id === folderState.view.filter) ? folderState.view.filter : "ALL",
+    // Al abrir o recargar la página, mostrar siempre "Todas" ('ALL') y orden original ('DEFAULT')
+    // para que ningún filtro u orden previo oculte o altere la lista de conversaciones al iniciar.
+    activeFolderFilter: "ALL",
     searchQuery: "",
-    sortMode: folderState.view.sort,
+    sortMode: "DEFAULT",
     toolbarCollapsed: folderState.view.toolbarCollapsed,
     toolbarVertical: !!folderState.view.toolbarVertical,
     autoScrollActive: false,
@@ -743,8 +742,6 @@
   }
   function parseConvId(el2) {
     if (!el2) return null;
-    const bridgedId = el2.getAttribute?.("data-gcm-conv-id") || el2.closest?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || el2.querySelector?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || "";
-    if (bridgedId) return bridgedId;
     const href = el2.getAttribute?.("href") || el2.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute?.("href") || el2.querySelector?.("a[href]")?.getAttribute?.("href") || "";
     const cached = rowIdCache.get(el2);
     if (cached && cached.href === href && href) return cached.id;
@@ -791,6 +788,8 @@
       const tm = TASK_ID_RE.exec(testIdAttr) || UUID_RE.exec(testIdAttr);
       if (tm) return tm[1];
     }
+    const bridgedId = el2.getAttribute?.("data-gcm-conv-id") || el2.closest?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || el2.querySelector?.("[data-gcm-conv-id]")?.getAttribute("data-gcm-conv-id") || "";
+    if (bridgedId) return bridgedId;
     return null;
   }
   function extractConvTitle(row, convId) {
@@ -833,27 +832,9 @@
       return false;
     }
     const links = container.querySelectorAll(CONV_LINK_SELECTOR);
-    if (links.length > 1) return false;
-    if (PLATFORM_KEY === "chatgpt") {
-      const items = container.querySelectorAll(
-        'a[href], .__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"]'
-      );
-      if (items.length > 1) return false;
-    }
-    return true;
+    return links.length <= 1;
   }
   function findRowContainer(el2) {
-    if (PLATFORM_KEY === "chatgpt") {
-      if (el2.tagName === "A" || el2.classList?.contains("__menu-item") || el2.getAttribute?.("data-sidebar-item") === "true") {
-        const explicitItemWrapper = el2.closest(
-          'li[data-testid^="history-item"], div[data-testid^="history-item"], [data-sidebar-chatgpt-conversation-key]'
-        );
-        if (explicitItemWrapper && isSingleRowContainer(explicitItemWrapper)) {
-          return explicitItemWrapper;
-        }
-        return el2;
-      }
-    }
     for (let i = 0; i < SELECTORS.rowClosest.length; i++) {
       const match = el2.closest(SELECTORS.rowClosest[i]);
       if (match && isSingleRowContainer(match)) return match;
@@ -896,12 +877,6 @@
     return false;
   }
   function getConversationRows() {
-    if (PLATFORM_KEY === "chatgpt") {
-      try {
-        document.dispatchEvent(new CustomEvent("gcm:scan-sidebar"));
-      } catch (_) {
-      }
-    }
     const sidebar = getSidebarElement();
     const root = PLATFORM_KEY === "chatgpt" ? document : sidebar || (PLATFORM_KEY !== "gemini" ? document : null);
     if (!root) return [];
@@ -917,10 +892,7 @@
       const id = parseConvId(el2);
       if (!id || seenIds.has(id)) continue;
       const row = findRowContainer(el2);
-      if (!isSingleRowContainer(row)) {
-        el2.removeAttribute?.("data-gcm-conv-id");
-        continue;
-      }
+      if (!isSingleRowContainer(row)) continue;
       if (!seenRows.has(row)) {
         seenRows.add(row);
         seenIds.add(id);
@@ -934,7 +906,7 @@
       }
     }
     if (PLATFORM_KEY === "chatgpt") {
-      const cloudSelector = 'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"], nav li, aside li';
+      const cloudSelector = 'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"]';
       const extraCandidates = Array.from(root.querySelectorAll(cloudSelector));
       for (const container of historyContainers) {
         if (container && container.children) {
@@ -1005,23 +977,10 @@
     const folderLookup = new Map(state.folderState.folders.map((f) => [f.id, f]));
     const cleanQuery = state.searchQuery.trim().toLowerCase();
     document.querySelectorAll(".gcm-hidden-by-filter").forEach((el2) => {
-      if (!isSingleRowContainer(el2)) {
+      if (state.activeFolderFilter === "ALL" && !cleanQuery || !isSingleRowContainer(el2)) {
         el2.classList.remove("gcm-hidden-by-filter");
       }
     });
-    if (state.activeFolderFilter !== "ALL" && !state.userClickedFilterInSession && items.length > 0) {
-      const anyMatch = items.some(({ id }) => {
-        const fId = state.folderState.assignments[id];
-        const f = fId ? folderLookup.get(fId) : null;
-        if (state.activeFolderFilter === "UNASSIGNED") return !f;
-        if (state.activeFolderFilter === "PROTECTED") return !!state.folderState.protectedIds[id];
-        return f && f.id === state.activeFolderFilter;
-      });
-      if (!anyMatch) {
-        state.activeFolderFilter = "ALL";
-        saveView();
-      }
-    }
     for (let i = 0; i < items.length; i++) {
       const { id, row, title } = items[i];
       const assignedFolderId = state.folderState.assignments[id];

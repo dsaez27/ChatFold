@@ -61,13 +61,6 @@ function slugifyTitleForTaskId(title) {
 export function parseConvId(el) {
   if (!el) return null;
 
-  const bridgedId =
-    el.getAttribute?.('data-gcm-conv-id') ||
-    el.closest?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
-    el.querySelector?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
-    '';
-  if (bridgedId) return bridgedId;
-
   const href =
     el.getAttribute?.('href') ||
     el.querySelector?.(CONV_LINK_SELECTOR)?.getAttribute?.('href') ||
@@ -123,6 +116,12 @@ export function parseConvId(el) {
     const tm = TASK_ID_RE.exec(testIdAttr) || UUID_RE.exec(testIdAttr);
     if (tm) return tm[1];
   }
+  const bridgedId =
+    el.getAttribute?.('data-gcm-conv-id') ||
+    el.closest?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
+    el.querySelector?.('[data-gcm-conv-id]')?.getAttribute('data-gcm-conv-id') ||
+    '';
+  if (bridgedId) return bridgedId;
   return null;
 }
 
@@ -180,32 +179,10 @@ export function isSingleRowContainer(container) {
     return false;
   }
   const links = container.querySelectorAll(CONV_LINK_SELECTOR);
-  if (links.length > 1) return false;
-  if (PLATFORM_KEY === 'chatgpt') {
-    const items = container.querySelectorAll(
-      'a[href], .__menu-item, [data-sidebar-item="true"], [data-testid^="history-item"]'
-    );
-    if (items.length > 1) return false;
-  }
-  return true;
+  return links.length <= 1;
 }
 
 function findRowContainer(el) {
-  if (PLATFORM_KEY === 'chatgpt') {
-    if (
-      el.tagName === 'A' ||
-      el.classList?.contains('__menu-item') ||
-      el.getAttribute?.('data-sidebar-item') === 'true'
-    ) {
-      const explicitItemWrapper = el.closest(
-        'li[data-testid^="history-item"], div[data-testid^="history-item"], [data-sidebar-chatgpt-conversation-key]'
-      );
-      if (explicitItemWrapper && isSingleRowContainer(explicitItemWrapper)) {
-        return explicitItemWrapper;
-      }
-      return el;
-    }
-  }
   for (let i = 0; i < SELECTORS.rowClosest.length; i++) {
     const match = el.closest(SELECTORS.rowClosest[i]);
     if (match && isSingleRowContainer(match)) return match;
@@ -266,12 +243,6 @@ function isLikelyChatGptCloudRow(el, historyContainers) {
 }
 
 export function getConversationRows() {
-  if (PLATFORM_KEY === 'chatgpt') {
-    try {
-      document.dispatchEvent(new CustomEvent('gcm:scan-sidebar'));
-    } catch (_) {}
-  }
-
   const sidebar = getSidebarElement();
   // En ChatGPT puede haber múltiples contenedores laterales (<nav>, <aside>, flyout de proyectos/tareas):
   // consultar en `document` (excluyendo <main> y nodos propios de ChatFold) garantiza detectar todos los chats.
@@ -294,10 +265,7 @@ export function getConversationRows() {
     if (!id || seenIds.has(id)) continue;
 
     const row = findRowContainer(el);
-    if (!isSingleRowContainer(row)) {
-      el.removeAttribute?.('data-gcm-conv-id');
-      continue;
-    }
+    if (!isSingleRowContainer(row)) continue;
 
     if (!seenRows.has(row)) {
       seenRows.add(row);
@@ -313,10 +281,10 @@ export function getConversationRows() {
   }
 
   // En ChatGPT: detectar también las tareas en la nube de Codex (filas con ícono de nube ☁️ a la derecha
-  // que React renderiza sin atributo href estándar o antes de que el bridge extraiga su Fiber).
+  // que React renderiza sin atributo href estándar).
   if (PLATFORM_KEY === 'chatgpt') {
     const cloudSelector =
-      'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"], nav li, aside li';
+      'nav .__menu-item, aside .__menu-item, nav [data-sidebar-item="true"], aside [data-sidebar-item="true"], nav [data-testid^="history-item"], aside [data-testid^="history-item"]';
     const extraCandidates = Array.from(root.querySelectorAll(cloudSelector));
     for (const container of historyContainers) {
       if (container && container.children) {

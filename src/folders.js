@@ -39,28 +39,13 @@ export function applyFolderBadgesAndFilter(items) {
   const folderLookup = new Map(state.folderState.folders.map((f) => [f.id, f]));
   const cleanQuery = state.searchQuery.trim().toLowerCase();
 
-  // Seguridad: si algún contenedor padre quedó con gcm-hidden-by-filter, restaurarlo de inmediato
+  // Seguridad: si el filtro está en 'ALL' sin búsqueda, limpiar cualquier clase gcm-hidden-by-filter residual;
+  // en cualquier caso, jamás ocultar un contenedor padre que agrupe múltiples filas.
   document.querySelectorAll('.gcm-hidden-by-filter').forEach((el) => {
-    if (!isSingleRowContainer(el)) {
+    if ((state.activeFolderFilter === 'ALL' && !cleanQuery) || !isSingleRowContainer(el)) {
       el.classList.remove('gcm-hidden-by-filter');
     }
   });
-
-  // Si al cargar la página había quedado guardado un filtro de carpeta que ocultaría el 100% de los chats
-  // visibles (sin que el usuario haya pulsado esa carpeta en esta sesión), restablecer a 'ALL'
-  if (state.activeFolderFilter !== 'ALL' && !state.userClickedFilterInSession && items.length > 0) {
-    const anyMatch = items.some(({ id }) => {
-      const fId = state.folderState.assignments[id];
-      const f = fId ? folderLookup.get(fId) : null;
-      if (state.activeFolderFilter === 'UNASSIGNED') return !f;
-      if (state.activeFolderFilter === 'PROTECTED') return !!state.folderState.protectedIds[id];
-      return f && f.id === state.activeFolderFilter;
-    });
-    if (!anyMatch) {
-      state.activeFolderFilter = 'ALL';
-      saveView();
-    }
-  }
 
   for (let i = 0; i < items.length; i++) {
     const { id, row, title } = items[i];
