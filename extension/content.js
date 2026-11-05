@@ -2721,8 +2721,10 @@ ${text}
   }
 
   // src/panel.js
-  function toggleLanguage() {
-    state.folderState.lang = state.folderState.lang === "es" ? "en" : "es";
+  function setAppLanguage(nextLang) {
+    const normalized = nextLang === "en" || nextLang === "es" ? nextLang : state.folderState.lang === "es" ? "en" : "es";
+    if (state.folderState.lang === normalized) return;
+    state.folderState.lang = normalized;
     saveFolderData(state.folderState);
     document.getElementById("gcm-toolbar")?.remove();
     document.getElementById("gcm-folders-box")?.remove();
@@ -2983,6 +2985,11 @@ ${text}
           } else if (msg.action === "IMPORT_BACKUP") {
             importBackupConfig();
             sendResponse?.({ ok: true });
+          } else if (msg.action === "SET_LANG" || msg.action === "TOGGLE_LANG") {
+            setAppLanguage(msg.lang);
+            sendResponse?.({ ok: true, lang: state.folderState.lang });
+          } else if (msg.action === "GET_STATE") {
+            sendResponse?.({ ok: true, lang: state.folderState.lang, minimized: state.folderState.minimized });
           }
         });
       }
@@ -3014,14 +3021,6 @@ ${text}
     });
     const headerActions = document.createElement("div");
     headerActions.className = "gcm-header-actions";
-    const langBtn = document.createElement("button");
-    langBtn.className = "gcm-mini-btn";
-    langBtn.textContent = state.folderState.lang.toUpperCase();
-    langBtn.title = t().langBtnTitle;
-    langBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleLanguage();
-    });
     const addBtn = document.createElement("button");
     addBtn.className = "gcm-add-folder-btn";
     setButtonIconText(addBtn, ICONS.folderPlus, t().newFolderBtn);
@@ -3040,7 +3039,6 @@ ${text}
       saveFolderData(state.folderState);
       refreshUI();
     });
-    headerActions.appendChild(langBtn);
     headerActions.appendChild(addBtn);
     headerActions.appendChild(minBtn);
     header.appendChild(title);

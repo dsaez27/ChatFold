@@ -47,6 +47,45 @@ body {
   color: #8ab4f8;
 }
 
+.cf-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+}
+
+.cf-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #e3e5e8;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.15s ease;
+}
+
+.cf-lang-btn:hover {
+  background: rgba(138, 180, 248, 0.18);
+  border-color: rgba(138, 180, 248, 0.45);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cf-lang-btn:active {
+  transform: scale(0.92);
+}
+
 .cf-version {
   font-size: 10px;
   font-weight: 600;
@@ -56,7 +95,6 @@ body {
   border: 1px solid rgba(138, 180, 248, 0.28);
   padding: 3px 7px;
   border-radius: 6px;
-  align-self: flex-start;
 }
 
 .cf-subtitle {
