@@ -1323,7 +1323,38 @@
   }
 
   // src/autoscroll.js
-  async function toggleAutoScrollHistory() {
+  function findScrollContainer(targetRow) {
+    let scroller = targetRow?.parentElement || null;
+    while (scroller && scroller !== document.body && scroller !== document.documentElement) {
+      if (scroller.scrollHeight > scroller.clientHeight + 10) {
+        return scroller;
+      }
+      scroller = scroller.parentElement;
+    }
+    return null;
+  }
+  async function pulseScrollInBackground(targetRow) {
+    const scroller = findScrollContainer(targetRow);
+    if (!scroller) return;
+    const savedScrollTop = scroller.scrollTop;
+    scroller.scrollTop = scroller.scrollHeight;
+    try {
+      scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
+    } catch (_) {
+    }
+    await new Promise((resolve) => {
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(resolve);
+      } else {
+        setTimeout(resolve, 16);
+      }
+    });
+    if (scroller.isConnected) {
+      scroller.scrollTop = savedScrollTop;
+    }
+  }
+  async function toggleAutoScrollHistory(options = {}) {
+    const silent = !!options.silent;
     if (state.autoScrollActive) {
       state.autoScrollActive = false;
       refreshUI();
@@ -1332,7 +1363,9 @@
     state.autoScrollActive = true;
     const runId = ++state.autoScrollRunId;
     refreshUI();
-    updateStatusToast(t().toastLoadingHistory);
+    if (!silent) {
+      updateStatusToast(t().toastLoadingHistory);
+    }
     let unchangedCycles = 0;
     let lastCount = getConversationRows().length;
     let finishedNaturally = false;
@@ -1346,27 +1379,23 @@
             break;
           }
         }
-        targetRow.scrollIntoView?.({ behavior: "smooth", block: "end" });
-        let scroller = targetRow.parentElement;
-        while (scroller && scroller !== document.body) {
-          if (scroller.scrollHeight > scroller.clientHeight + 10) {
-            scroller.scrollTop = scroller.scrollHeight;
-            break;
-          }
-          scroller = scroller.parentElement;
-        }
+        await pulseScrollInBackground(targetRow);
       }
-      await sleep(1300);
+      await sleep(1100);
       if (!state.autoScrollActive || runId !== state.autoScrollRunId) break;
       refreshUI();
       const currentCount = getConversationRows().length;
-      updateStatusToast(t().toastLoadedCount(currentCount));
+      if (!silent) {
+        updateStatusToast(t().toastLoadedCount(currentCount));
+      }
       if (currentCount === lastCount) {
         unchangedCycles++;
         if (unchangedCycles >= 4) {
           finishedNaturally = true;
           state.autoScrollActive = false;
-          updateStatusToast(t().toastLoadComplete(currentCount), null, null, 3500);
+          if (!silent) {
+            updateStatusToast(t().toastLoadComplete(currentCount), null, null, 3500);
+          }
           break;
         }
       } else {
@@ -1376,7 +1405,7 @@
     }
     if (runId !== state.autoScrollRunId) return;
     state.autoScrollActive = false;
-    if (!finishedNaturally) {
+    if (!finishedNaturally && !silent) {
       updateStatusToast(t().toastLoadedCount(getConversationRows().length), null, null, 2500);
     }
     refreshUI();
@@ -2463,7 +2492,7 @@ ${text}
     updateToolbarState();
     if (checked) {
       if (!state.autoScrollActive) {
-        toggleAutoScrollHistory();
+        toggleAutoScrollHistory({ silent: true });
       }
     } else if (state.autoScrollActive) {
       state.autoScrollActive = false;
@@ -3104,7 +3133,7 @@ ${text}
     scrollBtn.className = "gcm-footer-btn";
     setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
     scrollBtn.title = t().loadAllTitle;
-    scrollBtn.addEventListener("click", toggleAutoScrollHistory);
+    scrollBtn.addEventListener("click", () => toggleAutoScrollHistory({ silent: false }));
     const promptsBtn = document.createElement("button");
     promptsBtn.id = "gcm-prompts-btn";
     promptsBtn.className = "gcm-footer-btn";

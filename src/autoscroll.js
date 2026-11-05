@@ -4,7 +4,47 @@ import { getConversationRows } from './sidebar.js';
 import { state, t } from './state.js';
 import { sleep } from './utils.js';
 
-export async function toggleAutoScrollHistory() {
+function findScrollContainer(targetRow) {
+  let scroller = targetRow?.parentElement || null;
+  while (scroller && scroller !== document.body && scroller !== document.documentElement) {
+    if (scroller.scrollHeight > scroller.clientHeight + 10) {
+      return scroller;
+    }
+    scroller = scroller.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Pulso invisible de scroll en segundo plano: salta al fondo y restaura en el mismo frame
+ * (o micro-frame) la posición original `scrollTop` del usuario para disparar los IntersectionObservers
+ * y listeners `scroll` de carga perezosa sin que la barra lateral se mueva visualmente.
+ */
+async function pulseScrollInBackground(targetRow) {
+  const scroller = findScrollContainer(targetRow);
+  if (!scroller) return;
+
+  const savedScrollTop = scroller.scrollTop;
+  scroller.scrollTop = scroller.scrollHeight;
+  try {
+    scroller.dispatchEvent(new Event('scroll', { bubbles: true }));
+  } catch (_) {}
+
+  await new Promise((resolve) => {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(resolve);
+    } else {
+      setTimeout(resolve, 16);
+    }
+  });
+
+  if (scroller.isConnected) {
+    scroller.scrollTop = savedScrollTop;
+  }
+}
+
+export async function toggleAutoScrollHistory(options = {}) {
+  const silent = !!options.silent;
   if (state.autoScrollActive) {
     state.autoScrollActive = false;
     refreshUI();
@@ -14,7 +54,9 @@ export async function toggleAutoScrollHistory() {
   state.autoScrollActive = true;
   const runId = ++state.autoScrollRunId;
   refreshUI();
-  updateStatusToast(t().toastLoadingHistory);
+  if (!silent) {
+    updateStatusToast(t().toastLoadingHistory);
+  }
 
   let unchangedCycles = 0;
   let lastCount = getConversationRows().length;
@@ -31,30 +73,26 @@ export async function toggleAutoScrollHistory() {
           break;
         }
       }
-      targetRow.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
-      let scroller = targetRow.parentElement;
-      while (scroller && scroller !== document.body) {
-        if (scroller.scrollHeight > scroller.clientHeight + 10) {
-          scroller.scrollTop = scroller.scrollHeight;
-          break;
-        }
-        scroller = scroller.parentElement;
-      }
+      await pulseScrollInBackground(targetRow);
     }
 
-    await sleep(1300);
+    await sleep(1100);
     if (!state.autoScrollActive || runId !== state.autoScrollRunId) break;
     refreshUI();
 
     const currentCount = getConversationRows().length;
-    updateStatusToast(t().toastLoadedCount(currentCount));
+    if (!silent) {
+      updateStatusToast(t().toastLoadedCount(currentCount));
+    }
 
     if (currentCount === lastCount) {
       unchangedCycles++;
       if (unchangedCycles >= 4) {
         finishedNaturally = true;
         state.autoScrollActive = false;
-        updateStatusToast(t().toastLoadComplete(currentCount), null, null, 3500);
+        if (!silent) {
+          updateStatusToast(t().toastLoadComplete(currentCount), null, null, 3500);
+        }
         break;
       }
     } else {
@@ -66,7 +104,7 @@ export async function toggleAutoScrollHistory() {
   if (runId !== state.autoScrollRunId) return; // otro bucle más reciente tomó el control
 
   state.autoScrollActive = false;
-  if (!finishedNaturally) {
+  if (!finishedNaturally && !silent) {
     // Detenido por el usuario: no dejar el toast de progreso fijo en pantalla.
     updateStatusToast(t().toastLoadedCount(getConversationRows().length), null, null, 2500);
   }

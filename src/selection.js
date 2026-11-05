@@ -327,7 +327,7 @@ export function toggleSelectAll(checked) {
   updateToolbarState();
   if (checked) {
     if (!state.autoScrollActive) {
-      toggleAutoScrollHistory();
+      toggleAutoScrollHistory({ silent: true });
     }
   } else if (state.autoScrollActive) {
     state.autoScrollActive = false;

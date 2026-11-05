@@ -458,7 +458,7 @@ function buildFoldersPanelDOM(box) {
   scrollBtn.className = 'gcm-footer-btn';
   setButtonIconText(scrollBtn, ICONS.chevronsDown, t().loadAllBtn);
   scrollBtn.title = t().loadAllTitle;
-  scrollBtn.addEventListener('click', toggleAutoScrollHistory);
+  scrollBtn.addEventListener('click', () => toggleAutoScrollHistory({ silent: false }));
 
   const promptsBtn = document.createElement('button');
   promptsBtn.id = 'gcm-prompts-btn';
